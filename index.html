@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZAEL ACADEMY · Método de estudio de Ro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050707;
+      --surface: #0a1011;
+      --surface-2: #0d1517;
+      --red: #ff2a2a;
+      --red-2: #ff5a5a;
+      --amber: #ff4b3e;
+      --ok: #00e58c;
+      --ok-line: rgba(0, 229, 140, 0.45);
+      --text: #e9fff8;
+      --muted: #79a0a0;
+      --dim: #6b8788;
+      --line: rgba(255, 42, 42, 0.30);
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh; margin: 0; overflow-x: hidden;
+      font-family: "JetBrains Mono", Consolas, monospace;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 78% 12%, rgba(255, 42, 42, 0.13), transparent 36%),
+        radial-gradient(circle at 30% 70%, rgba(255, 42, 42, 0.07), transparent 38%),
+        linear-gradient(rgba(255, 42, 42, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 49, 49, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, auto, 36px 36px, 36px 36px, auto;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--red-2); outline-offset: 2px; border-radius: 4px; }
+    .shell { width: min(1080px, calc(100% - 26px)); margin: 0 auto; padding: 18px 0 40px; }
+    .frame {
+      position: relative; border: 1px solid var(--line); border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(14, 24, 26, 0.96), rgba(6, 10, 11, 0.96));
+      box-shadow: 0 0 26px rgba(255, 42, 42, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+      overflow: hidden;
+    }
+    .frame::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      border-top: 1px solid rgba(255, 82, 82, 0.28);
+      background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.018) 0, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 7px);
+      opacity: 0.4;
+    }
+    .pad { position: relative; z-index: 1; padding: 16px; }
+
+    /* HEADER */
+    .topbar { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .mark {
+      width: 46px; height: 46px; flex: none; border: 1px solid rgba(255, 42, 42, 0.64); border-radius: 50%;
+      display: grid; place-items: center; color: var(--red); font-weight: 800; font-size: 1.1rem;
+      box-shadow: 0 0 22px rgba(255, 42, 42, 0.34), inset 0 0 18px rgba(255, 42, 42, 0.18);
+    }
+    .eyebrow { color: var(--red-2); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    h1 { margin: 2px 0 0; font-size: clamp(1.4rem, 5vw, 2.2rem); line-height: 1; font-weight: 800; text-shadow: 0 0 20px rgba(255,42,42,0.3); }
+    .tagline { margin: 4px 0 0; color: var(--muted); font-size: 0.74rem; }
+    .clock { padding: 9px 12px; border: 1px solid rgba(255, 42, 42, 0.42); border-radius: 7px; background: rgba(255, 42, 42, 0.05); text-align: right; }
+    .clock-date { display: block; color: var(--muted); font-size: 0.64rem; text-transform: uppercase; }
+    .clock-time { display: block; margin-top: 3px; color: var(--red); font-size: 1.1rem; font-weight: 800; }
+
+    /* TABS */
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .tab {
+      flex: 1 1 auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 7px;
+      background: rgba(255,42,42,0.04); color: var(--muted); font-weight: 800; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+      transition: all 140ms ease;
+    }
+    .tab:hover { border-color: rgba(255,42,42,0.6); color: var(--text); }
+    .tab.active { color: #170101; background: var(--red); border-color: var(--red); box-shadow: 0 0 20px rgba(255,42,42,0.3); }
+
+    .view { display: none; animation: fade 200ms ease; }
+    .view.active { display: block; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .section-head { margin: 0 0 4px; font-size: 0.82rem; font-weight: 800; text-transform: uppercase; color: var(--text); letter-spacing: 0.05em; }
+    .section-sub { margin: 0 0 14px; color: var(--muted); font-size: 0.74rem; line-height: 1.5; }
+    .grid { display: grid; gap: 12px; }
+
+    /* METHOD STEPS */
+    .step { display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 13px; align-items: start; }
+    .step-n {
+      width: 52px; height: 52px; border: 1px solid rgba(255, 42, 42, 0.5); border-radius: 12px; display: grid; place-items: center;
+      font-size: 1.5rem; box-shadow: 0 0 18px rgba(255,42,42,0.18); background: rgba(255,42,42,0.05);
+    }
+    .step h4 { margin: 0 0 3px; font-size: 0.86rem; text-transform: uppercase; color: var(--text); }
+    .step h4 small { color: var(--red-2); font-weight: 700; margin-left: 6px; font-size: 0.68rem; }
+    .step p { margin: 0; color: var(--muted); font-size: 0.76rem; line-height: 1.5; }
+    .step .why { display: inline-block; margin-top: 5px; color: var(--ok); font-size: 0.68rem; }
+
+    .rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .rules li { display: grid; grid-template-columns: 30px minmax(0,1fr); gap: 9px; align-items: center; padding: 9px; border: 1px solid rgba(255,75,62,0.25); border-radius: 7px; background: rgba(255,75,62,0.04); color: var(--muted); font-size: 0.74rem; line-height: 1.4; }
+    .rules b { color: var(--amber); font-size: 0.86rem; text-align: center; }
+
+    .stack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .tool { border: 1px solid var(--line); border-radius: 7px; padding: 11px; background: rgba(255,42,42,0.035); }
+    .tool b { display: block; color: var(--text); font-size: 0.78rem; text-transform: uppercase; margin-bottom: 4px; }
+    .tool span { display: block; color: var(--muted); font-size: 0.72rem; line-height: 1.45; }
+    .tool em { color: var(--ok); font-style: normal; font-size: 0.66rem; }
+
+    /* QUIZ */
+    .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .mod {
+      text-align: left; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: rgba(255,42,42,0.04);
+      transition: all 140ms ease; color: var(--muted);
+    }
+    .mod:not(:disabled):hover { transform: translateY(-2px); border-color: rgba(255,42,42,0.7); box-shadow: 0 0 18px rgba(255,42,42,0.14); }
+    .mod:disabled { opacity: 0.42; cursor: not-allowed; }
+    .mod .mod-id { display: block; color: var(--red); font-weight: 800; font-size: 0.94rem; }
+    .mod .mod-t { display: block; color: var(--text); font-size: 0.72rem; margin: 4px 0 8px; line-height: 1.35; min-height: 30px; }
+    .mod .mod-st { display: block; font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .mod .mod-st.done { color: var(--ok); }
+    .mod .mod-st.due { color: var(--amber); }
+    .mod .mod-st.pend { color: var(--dim); }
+
+    .runner { display: none; }
+    .runner.active { display: block; }
+    .q-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .q-counter { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; }
+    .q-bar { flex: 1; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; margin: 0 10px; }
+    .q-bar i { display: block; height: 100%; background: var(--red); box-shadow: 0 0 12px var(--red); transition: width 200ms ease; }
+    .q-quit { border: 1px solid rgba(255,42,42,0.4); border-radius: 6px; background: transparent; color: var(--muted); padding: 5px 9px; font-size: 0.64rem; text-transform: uppercase; }
+    .q-text { margin: 0 0 14px; font-size: 0.94rem; line-height: 1.5; color: var(--text); font-weight: 600; }
+    .opts { display: grid; gap: 9px; }
+    .opt {
+      text-align: left; border: 1px solid rgba(255,42,42,0.3); border-radius: 8px; padding: 12px 14px; background: rgba(255,42,42,0.04);
+      color: var(--text); font-size: 0.8rem; line-height: 1.45; transition: all 120ms ease;
+    }
+    .opt:not(:disabled):hover { border-color: rgba(255,42,42,0.75); background: rgba(255,42,42,0.1); }
+    .opt:disabled { cursor: default; }
+    .opt.correct { border-color: var(--ok-line); background: rgba(0,229,140,0.12); color: #b9ffe6; }
+    .opt.wrong { border-color: rgba(255,42,42,0.85); background: rgba(255,42,42,0.16); }
+    .opt .tick { float: right; font-weight: 800; display: inline-block; animation: pop 220ms ease; }
+    @keyframes pop { from { transform: scale(0); } 70% { transform: scale(1.25); } to { transform: scale(1); } }
+    .opt.correct .tick { color: var(--ok); }
+    .opt.wrong .tick { color: var(--red); }
+    .explain {
+      margin-top: 12px; border-left: 3px solid var(--ok); border-radius: 4px; padding: 11px 13px; background: rgba(0,229,140,0.06);
+      color: #cfeee2; font-size: 0.76rem; line-height: 1.55; display: none;
+    }
+    .explain.show { display: block; animation: fade 180ms ease; }
+    .explain b { color: var(--ok); }
+    .q-actions { margin-top: 14px; display: flex; justify-content: flex-end; }
+    .btn {
+      min-height: 44px; padding: 0 22px; border: 1px solid rgba(255,42,42,0.62); border-radius: 7px;
+      color: #170101; background: var(--red); font-weight: 800; text-transform: uppercase; font-size: 0.74rem; letter-spacing: 0.04em;
+      box-shadow: 0 0 20px rgba(255,42,42,0.26); transition: all 140ms ease;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(255,42,42,0.4); }
+    .btn[disabled] { opacity: 0.35; pointer-events: none; }
+    .btn.ghost { color: var(--red); background: rgba(255,42,42,0.07); }
+
+    /* RESULT */
+    .result { display: none; text-align: center; }
+    .result.active { display: block; }
+    .score-ring {
+      width: 140px; height: 140px; margin: 6px auto 14px; border-radius: 50%; display: grid; place-items: center;
+      border: 3px solid rgba(255,42,42,0.6); box-shadow: 0 0 30px rgba(255,42,42,0.3), inset 0 0 24px rgba(255,42,42,0.16);
+    }
+    .score-ring.pass { border-color: var(--ok-line); box-shadow: 0 0 30px rgba(0,229,140,0.28), inset 0 0 24px rgba(0,229,140,0.14); }
+    .score-ring b { font-size: 2.4rem; font-weight: 800; line-height: 1; }
+    .score-ring span { display: block; color: var(--muted); font-size: 0.66rem; text-transform: uppercase; margin-top: 3px; }
+    .result h3 { margin: 0 0 6px; font-size: 1.1rem; text-transform: uppercase; }
+    .result .verdict { color: var(--muted); font-size: 0.8rem; line-height: 1.55; max-width: 460px; margin: 0 auto 14px; }
+    .gaps { text-align: left; max-width: 520px; margin: 0 auto 16px; display: grid; gap: 7px; }
+    .gaps .gh { color: var(--amber); font-size: 0.72rem; text-transform: uppercase; }
+    .gaps .gap { border: 1px solid rgba(255,75,62,0.3); border-radius: 6px; padding: 9px 11px; background: rgba(255,75,62,0.05); color: var(--muted); font-size: 0.74rem; line-height: 1.45; }
+    .schedule { color: var(--ok); font-size: 0.78rem; margin: 0 0 16px; }
+    .result-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .cal-btn { place-items: center; margin: 6px auto 14px; max-width: 380px; text-decoration: none; }
+
+    /* BRIEFING (paso 1) */
+    .briefing { display: none; }
+    .briefing.active { display: block; }
+    .brief-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .speak-btn { flex: none; border: 1px solid var(--ok-line); border-radius: 7px; background: rgba(0,229,140,0.08); color: var(--ok); padding: 9px 15px; font-size: 0.74rem; font-weight: 700; transition: all 140ms ease; }
+    .speak-btn:hover { background: rgba(0,229,140,0.16); }
+    .speak-btn.playing { background: rgba(0,229,140,0.24); box-shadow: 0 0 16px rgba(0,229,140,0.22); }
+    .brief-list { margin: 4px 0 16px; padding-left: 18px; display: grid; gap: 10px; }
+    .brief-list li { color: var(--text); font-size: 0.82rem; line-height: 1.55; }
+    .speak-err { margin: 6px 0 0; color: var(--amber); font-size: 0.72rem; display: none; }
+    .speak-err.show { display: block; }
+    .view > .frame + .frame { margin-top: 12px; }
+    .tab:active { transform: translateY(1px); }
+    .result.active .score-ring { animation: ringIn 320ms ease both; }
+    @keyframes ringIn { from { transform: scale(0.82); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* PROGRESO */
+    .prog-list { display: grid; gap: 10px; }
+    .prog {
+      display: grid; grid-template-columns: 54px minmax(0,1fr) auto; gap: 13px; align-items: center;
+      border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: rgba(255,42,42,0.035);
+    }
+    .prog .pid { font-weight: 800; color: var(--red); font-size: 1rem; }
+    .prog .pt { color: var(--text); font-size: 0.76rem; }
+    .prog .pmeta { color: var(--dim); font-size: 0.66rem; margin-top: 3px; }
+    .prog .pst { text-align: right; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.5; }
+    .prog .pst .big { display: block; font-size: 0.82rem; font-weight: 800; }
+    .pst .done { color: var(--ok); } .pst .due { color: var(--amber); } .pst .pend { color: var(--dim); }
+    .box-dots { display: inline-flex; gap: 3px; margin-top: 4px; }
+    .box-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.12); }
+    .box-dots i.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+
+    /* RUTA */
+    .road { display: grid; gap: 12px; }
+    .phase { display: grid; grid-template-columns: 40px minmax(0,1fr); gap: 12px; align-items: start; }
+    .phase .pn { width: 40px; height: 40px; border: 1px solid rgba(255,42,42,0.5); border-radius: 50%; display: grid; place-items: center; color: var(--red); font-weight: 800; background: rgba(255,42,42,0.05); }
+    .phase h4 { margin: 0 0 3px; font-size: 0.82rem; text-transform: uppercase; color: var(--text); }
+    .phase p { margin: 0; color: var(--muted); font-size: 0.75rem; line-height: 1.5; }
+    .principle { margin-top: 14px; border: 1px solid var(--ok-line); border-radius: 8px; padding: 13px; background: rgba(0,229,140,0.05); }
+    .principle b { color: var(--ok); }
+    .principle p { margin: 6px 0 0; color: var(--text); font-size: 0.78rem; line-height: 1.55; }
+
+    .footer { margin-top: 16px; padding: 12px 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--dim); font-size: 0.66rem; }
+
+    @media (max-width: 620px) {
+      .topbar { grid-template-columns: 1fr; }
+      .clock { text-align: left; }
+      .tab { flex: 1 1 40%; font-size: 0.66rem; }
+      .step { grid-template-columns: 44px minmax(0,1fr); }
+      .prog { grid-template-columns: 40px minmax(0,1fr); }
+      .prog .pst { grid-column: 1 / -1; text-align: left; margin-top: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- HEADER -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">A</div>
+        <div>
+          <div class="eyebrow">ZAEL · sistema de aprendizaje</div>
+          <h1>ZAEL ACADEMY</h1>
+          <p class="tagline">Aprendé eligiendo, sin leer. Quiz adentro · repaso automático.</p>
+        </div>
+      </div>
+      <time class="clock" id="clock">
+        <span class="clock-date">cargando…</span>
+        <span class="clock-time">--:--:--</span>
+      </time>
+    </header>
+
+    <!-- TABS -->
+    <nav class="tabs" role="tablist" aria-label="Secciones de ZAEL Academy">
+      <button class="tab active" data-view="metodo" role="tab" aria-selected="true">El método</button>
+      <button class="tab" data-view="quiz" role="tab" aria-selected="false">Quiz</button>
+      <button class="tab" data-view="progreso" role="tab" aria-selected="false">Progreso</button>
+      <button class="tab" data-view="ruta" role="tab" aria-selected="false">Ruta a experta</button>
+    </nav>
+
+    <!-- VIEW: METODO -->
+    <section class="view active" id="view-metodo">
+      <div class="frame"><div class="pad">
+        <h3 class="section-head">El ciclo de 5 pasos</h3>
+        <p class="section-sub">Para cada concepto o clase nueva, mismo ciclo. Nada de leer choclazos ni redactar.</p>
+        <div class="grid">
+          <div class="step"><div class="step-n">🎧</div><div><h4>1 · Escuchar <small>input sin leer</small></h4><p>Metés el PDF/video en NotebookLM (o me pedís que te lo cuente masticado). Nunca leés el muro de texto.</p><span class="why">▸ baja la barrera de entrada</span></div></div>
+          <div class="step"><div class="step-n">✅</div><div><h4>2 · Elegir <small>active recall</small></h4><p>Hacés el quiz de acá. Elegís, no escribís. Te marca los huecos al instante.</p><span class="why">▸ la técnica #1 en evidencia científica</span></div></div>
+          <div class="step"><div class="step-n">✏️</div><div><h4>3 · Dibujar <small>dual coding</small></h4><p>Solo los conceptos que fallaste: un mini-diagrama de 2 minutos. No un mapa mental de 3 horas.</p><span class="why">▸ lo tuyo, visual — y con base real</span></div></div>
+          <div class="step"><div class="step-n">🔁</div><div><h4>4 · Repetir <small>repetición espaciada</small></h4><p>El mismo quiz vuelve a los días 1 · 3 · 7 · 14 · 30. La app te avisa cuándo toca (pestaña Progreso).</p><span class="why">▸ vence la curva del olvido</span></div></div>
+          <div class="step"><div class="step-n">💥</div><div><h4>5 · Romper <small>de intermedia a experta</small></h4><p>Agarrás algo que ya sabés hacer en n8n, lo rompés a propósito y explicás por qué se rompió.</p><span class="why">▸ acá pasás de "sé hacerlo" a "sé por qué"</span></div></div>
+        </div>
+      </div></div>
+
+      <div class="frame"><div class="pad">
+        <h3 class="section-head">🌀 Las 5 reglas anti-overthinking</h3>
+        <p class="section-sub">Tu enemigo #1 satura la memoria justo cuando querés aprender. Estas reglas lo cortan.</p>
+        <ol class="rules">
+          <li><b>1</b><span><strong>Una sola cosa por sesión.</strong> 2 minutos para definirla y listo.</span></li>
+          <li><b>2</b><span><strong>Máx 2 fuentes.</strong> La tercera no suma — dispara el loop del "pero también dice que…".</span></li>
+          <li><b>3</b><span><strong>"Me suena" ≠ "lo sé".</strong> Si el quiz te resulta fácil, subimos dificultad.</span></li>
+          <li><b>4</b><span><strong>Good enough.</strong> Entender lo justo para el próximo paso, no todo de una.</span></li>
+          <li><b>5</b><span><strong>Si entrás en loop:</strong> pies al piso, 10 segundos, volvé. Corta la espiral.</span></li>
+        </ol>
+      </div></div>
+
+      <div class="frame"><div class="pad">
+        <h3 class="section-head">🛠️ Tu stack (todo gratis)</h3>
+        <div class="stack-grid" style="margin-top:10px">
+          <div class="tool"><b>NotebookLM</b><span>Subís el PDF/video del curso → te genera quiz + un audio que escuchás sin leer.</span><em>el paso 1</em></div>
+          <div class="tool"><b>Knowt</b><span>Flashcards que te repite solo el día justo. Alternativa moderna a Anki.</span><em>refuerza el paso 4</em></div>
+          <div class="tool"><b>Claude (yo)</b><span>Te explico, te genero los quizzes de la app, te corrijo y te armo los diagramas.</span><em>todo el ciclo</em></div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- VIEW: QUIZ -->
+    <section class="view" id="view-quiz">
+      <div class="frame"><div class="pad">
+        <!-- module picker -->
+        <div id="picker">
+          <h3 class="section-head">Elegí qué repasar</h3>
+          <p class="section-sub">Los módulos con quiz cargado están activos. Los demás los desbloqueo yo cuando cierres esa clase (pedime "generá el quiz de MX").</p>
+          <div class="mod-grid" id="modGrid"></div>
+        </div>
+
+        <!-- briefing del módulo (paso 1: escuchar) -->
+        <div class="briefing" id="briefing">
+          <div class="brief-top">
+            <h3 class="section-head" id="briefTitle">Resumen</h3>
+            <button class="speak-btn" id="speakBtn" aria-label="Escuchar el resumen en voz alta">🔊 Escuchar</button>
+          </div>
+          <p class="speak-err" id="speakErr" role="alert"></p>
+          <p class="section-sub">Paso 1 · escuchá o leé el resumen masticado. Cuando estés, arrancás el quiz.</p>
+          <ul class="brief-list" id="briefList"></ul>
+          <div class="q-actions" style="justify-content:space-between">
+            <button class="btn ghost" id="briefBack">← Volver</button>
+            <button class="btn" id="briefStart">Arrancar quiz →</button>
+          </div>
+        </div>
+
+        <!-- quiz runner -->
+        <div class="runner" id="runner">
+          <div class="q-top">
+            <span class="q-counter" id="qCounter">1 / 10</span>
+            <div class="q-bar"><i id="qBar" style="width:0%"></i></div>
+            <button class="q-quit" id="qQuit">salir</button>
+          </div>
+          <p class="q-text" id="qText"></p>
+          <div class="opts" id="qOpts"></div>
+          <div class="explain" id="qExplain"></div>
+          <div class="q-actions">
+            <button class="btn" id="qNext" disabled>Siguiente</button>
+          </div>
+        </div>
+
+        <!-- result -->
+        <div class="result" id="result">
+          <div class="score-ring" id="scoreRing"><div><b id="scoreNum">0/0</b><span>puntaje</span></div></div>
+          <h3 id="resultTitle">Resultado</h3>
+          <p class="verdict" id="resultVerdict"></p>
+          <div class="gaps" id="resultGaps"></div>
+          <p class="schedule" id="resultSchedule"></p>
+          <a class="btn cal-btn" id="calBtn" target="_blank" rel="noreferrer" style="display:none">📅 Agendar repaso en Google Calendar</a>
+          <div class="result-actions">
+            <button class="btn ghost" id="retry">Repetir ahora</button>
+            <button class="btn" id="backToPicker">Elegir otro</button>
+          </div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- VIEW: PROGRESO -->
+    <section class="view" id="view-progreso">
+      <div class="frame"><div class="pad">
+        <h3 class="section-head">Tu progreso · repaso espaciado</h3>
+        <p class="section-sub">Cada módulo aprobado avanza de caja (más espaciado). Si fallás, vuelve a 1 día. Los puntitos verdes = qué tan espaciado quedó.</p>
+        <div class="prog-list" id="progList"></div>
+      </div></div>
+    </section>
+
+    <!-- VIEW: RUTA -->
+    <section class="view" id="view-ruta">
+      <div class="frame"><div class="pad">
+        <h3 class="section-head">🚀 De intermedia a experta real</h3>
+        <p class="section-sub">Vos ya sabés construir workflows. El salto no es hacer más — es entender el "por qué" y poder explicarlo.</p>
+        <div class="road">
+          <div class="phase"><div class="pn">1</div><div><h4>Base sólida</h4><p>n8n Learning Path Nivel 2. Pero antes de cada ejercicio, escribí: "qué espero que pase y por qué". Después comparás. Ese delta es el aprendizaje.</p></div></div>
+          <div class="phase"><div class="pn">2</div><div><h4>AI Agents (lo más demandado)</h4><p>Agentes con memoria, tools y razonamiento multi-paso. Entrá al community.n8n.io a RESPONDER preguntas de otros, no solo a leer. Responder fuerza el concepto.</p></div></div>
+          <div class="phase"><div class="pn">3</div><div><h4>Proyecto real</h4><p>Un sistema completo para un cliente hipotético (webhook → AI Agent → output → notificación), documentado como si lo entregaras. La brecha entre "lo armé" y "lo puedo explicar" ES el gap conceptual.</p></div></div>
+          <div class="phase"><div class="pn">4</div><div><h4>Enseñar para verificar</h4><p>Explicá un concepto en 3 oraciones sin el canvas delante. Si no podés, todavía no lo entendés. Publicarlo (post, thread, video de 2 min) es el mejor detector.</p></div></div>
+        </div>
+        <div class="principle"><b>El principio que ata todo:</b><p>Construir → romper a propósito → explicar en voz alta por qué se rompió → buscar la teoría DESPUÉS para confirmar. La teoría así no es abstracta: llega como respuesta a una pregunta que ya tenías.</p></div>
+      </div></div>
+    </section>
+
+    <footer class="footer">
+      <span>ZAEL ACADEMY · método de estudio de Ro</span>
+      <span>v1.0 · datos guardados en este navegador (localStorage)</span>
+    </footer>
+  </div>
+
+  <script>
+    /* ====== CONTENIDO DE QUIZZES ======
+       Para agregar un módulo nuevo: pedile a Claude "generá el quiz de MX"
+       y pegá el bloque acá. Formato: { q, options:[...], correct: <índice base 0>, explain } */
+    const QUIZZES = {
+      M1: {
+        title: "Ecosistemas y arquitectura",
+        summary: [
+          "M1 es UNA sola cosa: armar un sistema que recibe los síntomas de un paciente, los clasifica con IA y le avisa al médico — y que nunca se caiga, porque en salud un error es la vida de alguien.",
+          "Webhook es el timbre: una URL que escucha y dispara el flujo cuando llega un paciente nuevo. Distinto del Schedule, que chequea cada tanto.",
+          "A la IA, que es Groq, la controlás con tres perillas: temperatura cero coma dos para que no invente, output schema JSON para que responda en un idioma que el sistema entienda, y los tokens que miden largo y costo.",
+          "Resiliencia es que el flujo degrade con gracia: si la IA falla, el setting Continue On Fail manda el caso por una ruta de rescate, que es el fallback, y ningún paciente queda sin atención.",
+          "Observabilidad: los logs cuentan la historia que leés después, y Sentry te grita en el momento justo en que algo se rompe.",
+          "Idempotencia es que correr el flujo una o cien veces da el mismo resultado, sin duplicar nada. Y las API keys van en Credentials, nunca hardcodeadas; si se filtran, revocás primero y generás la nueva después."
+        ],
+        questions: [
+          { q: "¿Qué es la idempotencia en un workflow?",
+            options: ["El flujo reintenta solo cuando algo falla","Correr 1 o 100 veces da el mismo resultado, sin duplicar ni romper","Cada ejecución usa datos distintos e independientes","El workflow se dispara sin trigger manual"],
+            correct: 1,
+            explain: "Idempotencia = ejecutar el mismo flujo 1 o 100 veces deja el mismo resultado, sin duplicar datos ni romper nada. Ojo: 'reintenta solo' es RETRY, otra cosa." },
+          { q: "¿Diferencia entre Trigger y Webhook?",
+            options: ["Trigger es el concepto general; el webhook es un tipo de trigger (URL que escucha HTTP)","El webhook es el concepto general; el trigger es un tipo de webhook","Son sinónimos, dos nombres para lo mismo","El trigger envía datos hacia afuera; el webhook los recibe"],
+            correct: 0,
+            explain: "Trigger = cualquier disparador (cron, evento, mensaje). Webhook = un tipo de trigger: una URL que escucha llamadas HTTP. Todo webhook es trigger, no al revés." },
+          { q: "Si una API KEY se compromete, ¿qué hacés PRIMERO?",
+            options: ["Genero la nueva primero, después revoco la vieja","Revoco primero la comprometida, después genero la nueva","La cambio hardcodeada directo en el JSON del workflow","Espero a la rotación mensual programada"],
+            correct: 1,
+            explain: "Si se filtra: revocás PRIMERO (cortás al que la robó), generás la nueva DESPUÉS. Y nunca va hardcodeada en el workflow — va en el panel Credentials." },
+          { q: "¿Diferencia entre Prompt User y Prompt System?",
+            options: ["System = rol y reglas del bot; User = lo que escribe la persona","User = rol y reglas; System = lo que escribe la persona","Son lo mismo, cambia sólo dónde se escriben","User define el rol; System es la respuesta del modelo"],
+            correct: 0,
+            explain: "System = libreto del bot (rol, reglas), se carga una vez y manda. User = lo que escribe la persona, cambia siempre. La respuesta del modelo es el output, ni uno ni otro." },
+          { q: "¿Qué controla la Temperatura y qué valor usás para clasificar?",
+            options: ["Cuán creativa/aleatoria es la respuesta; para clasificar cerca de 0","La creatividad; para clasificar la subís a 0.8","La velocidad de respuesta; para clasificar la ponés en 1","Cuántos tokens gasta; para clasificar la dejás en 1"],
+            correct: 0,
+            explain: "Temperatura = creatividad/aleatoriedad. 0 = exacto y repetible (mismo input, misma salida). Para clasificar (sobre todo en salud) querés 0–0.2." },
+          { q: "¿Cuáles son las 4 características de un Agente?",
+            options: ["Percibe el entorno · Planifica · Ejecuta acciones · Usa lenguaje natural","Percibe · Memoriza · Responde · Aprende solo","Recibe input · Procesa · Devuelve output · Se conecta a una API","Planifica · Ejecuta · Memoria infinita · No necesita supervisión"],
+            correct: 0,
+            explain: "Las 4: percibe el entorno, planifica, ejecuta acciones, usa lenguaje natural. Si falta una, es un chatbot, un script o una automatización lineal — no un agente." },
+          { q: "No code / Low code / Vibe Coding: ¿cuál es correcta? (¿dónde entra n8n?)",
+            options: ["No code = cero código; Low code = visual pero podés codear (n8n acá); Vibe = la IA escribe el código","n8n es No code: nunca se escribe una línea de código","No code = n8n; Low code = Python puro; Vibe = reciclar código viejo","Low code = cero código; No code = algo de código"],
+            correct: 0,
+            explain: "No code = cero código. Low code = visual pero permite código cuando hace falta → n8n es ESTO (las expresiones {{ }} ya son código). Vibe coding = la IA escribe el código por vos." },
+          { q: "¿Qué es un Fallback y qué setting de n8n lo hace posible?",
+            options: ["Reintentar el mismo nodo hasta que funcione; 'Retry On Fail'","Camino alternativo predefinido si el principal falla; 'Continue On Fail' / On Error → Continue","Volver al paso anterior del flujo; el nodo Wait","Una respuesta de error genérica que corta el workflow"],
+            correct: 1,
+            explain: "Fallback = ruta de rescate predefinida para cuando el nodo crítico falla. En n8n lo habilita On Error → Continue (Continue On Fail). Ojo: Retry es reintentar, no es fallback." },
+          { q: "¿Qué son los Tokens y por qué importa controlarlos?",
+            options: ["La cantidad de nodos del workflow","Unidad con la que el LLM mide texto; cobran por token (costo) y hay límite de contexto (si te pasás, corta)","Llaves de acceso a la API","Créditos de n8n para correr workflows"],
+            correct: 1,
+            explain: "Tokens = unidad con la que el LLM mide texto (1 palabra ≈ 1-2 tokens). Importan por costo (cobran por token) y por el límite de contexto: si te pasás, trunca la respuesta." },
+          { q: "¿Qué hace Sentry y en qué se diferencia de los Logs?",
+            options: ["Sentry = registro histórico; Logs = alerta en tiempo real","Son lo mismo; Sentry es la versión paga de los Logs","Logs = registro histórico (lo leés después); Sentry = te avisa en tiempo real cuando algo se rompe","Logs = errores; Sentry = métricas de performance"],
+            correct: 2,
+            explain: "Logs = el diario del sistema, lo leés después (pasivo, post-mortem). Sentry = la alarma de incendios, te grita al toque (activo). En producción van juntos." }
+        ]
+      },
+      M2: { title: "Bases de conocimiento y RAG", questions: [] },
+      M3: { title: "Multi-modalidad (imagen, audio)", questions: [] },
+      M4: { title: "Intervención humana (HITL)", questions: [] },
+      M5: { title: "Evaluación y buenas prácticas", questions: [] },
+      M6: { title: "Proyecto final integrador", questions: [] },
+      M7: { title: "Evaluación integradora", questions: [] }
+    };
+
+    const INTERVALS = [1, 3, 7, 14, 30];
+    const PASS = 0.7;
+    const STORE_KEY = "zael.academy.v1";
+
+    /* ---- estado ---- */
+    let curMod = null, curQ = 0, order = [], correctCount = 0, gaps = [], locked = false;
+
+    /* ---- helpers de fecha (corren en el navegador) ---- */
+    function todayStart(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+    function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+    function toISO(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+    function daysUntil(iso){ if(!iso) return null; const t = new Date(iso + "T00:00:00"); return Math.round((t - todayStart()) / 86400000); }
+
+    function loadProg(){ try { return JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch(e){ return {}; } }
+    function saveProg(p){ localStorage.setItem(STORE_KEY, JSON.stringify(p)); }
+
+    /* ---- tabs ---- */
+    document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(x => { x.classList.remove("active"); x.setAttribute("aria-selected", "false"); });
+      document.querySelectorAll(".view").forEach(x => x.classList.remove("active"));
+      t.classList.add("active");
+      t.setAttribute("aria-selected", "true");
+      document.getElementById("view-" + t.dataset.view).classList.add("active");
+      if (t.dataset.view === "progreso") renderProgress();
+      if (t.dataset.view === "quiz") backToPicker();
+    }));
+
+    /* ---- reloj ---- */
+    const clockEl = document.getElementById("clock");
+    const dF = new Intl.DateTimeFormat("es-AR", { weekday:"long", day:"numeric", month:"long" });
+    const tF = new Intl.DateTimeFormat("es-AR", { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false });
+    function tick(){ const n = new Date(); clockEl.querySelector(".clock-date").textContent = dF.format(n); clockEl.querySelector(".clock-time").textContent = tF.format(n); }
+    tick(); setInterval(tick, 1000);
+
+    /* ---- module picker ---- */
+    function renderPicker(){
+      const prog = loadProg();
+      const grid = document.getElementById("modGrid");
+      grid.innerHTML = "";
+      Object.keys(QUIZZES).forEach(id => {
+        const m = QUIZZES[id];
+        const has = m.questions.length > 0;
+        const rec = prog[id];
+        const btn = document.createElement("button");
+        btn.className = "mod";
+        let st = '<span class="mod-st pend">🔒 sin cargar aún</span>';
+        if (has && rec) {
+          const du = daysUntil(rec.nextReview);
+          if (du !== null && du <= 0) st = '<span class="mod-st due">¡toca repasar!</span>';
+          else st = '<span class="mod-st done">último: ' + rec.lastScore + '/' + rec.total + '</span>';
+        } else if (has) {
+          st = '<span class="mod-st done">listo para arrancar</span>';
+        }
+        btn.innerHTML = '<span class="mod-id">' + id + '</span><span class="mod-t">' + m.title + '</span>' + st;
+        if (!has) btn.disabled = true; else btn.addEventListener("click", () => showBriefing(id));
+        grid.appendChild(btn);
+      });
+    }
+
+    /* ---- briefing + escuchar (paso 1) ---- */
+    let briefMod = null;
+    function showBriefing(id){
+      stopSpeak();
+      briefMod = id;
+      const m = QUIZZES[id];
+      document.getElementById("picker").style.display = "none";
+      document.getElementById("runner").classList.remove("active");
+      document.getElementById("result").classList.remove("active");
+      document.getElementById("briefTitle").textContent = "Resumen · " + id + " — " + m.title;
+      const ul = document.getElementById("briefList");
+      ul.innerHTML = "";
+      (m.summary && m.summary.length ? m.summary : ["(Resumen no cargado todavía para este módulo.)"]).forEach(s => {
+        const li = document.createElement("li"); li.textContent = s; ul.appendChild(li);
+      });
+      document.getElementById("briefing").classList.add("active");
+    }
+    function briefText(id){ return (QUIZZES[id] && QUIZZES[id].summary || []).join(". "); }
+    function stopSpeak(){
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      const b = document.getElementById("speakBtn");
+      if (b) { b.classList.remove("playing"); b.textContent = "🔊 Escuchar"; }
+    }
+    function toggleSpeak(){
+      const err = document.getElementById("speakErr");
+      if (!("speechSynthesis" in window)) { err.textContent = "Tu navegador no soporta lectura en voz alta. Probá con Chrome o Edge."; err.classList.add("show"); return; }
+      err.classList.remove("show");
+      if (window.speechSynthesis.speaking) { stopSpeak(); return; }
+      const b = document.getElementById("speakBtn");
+      const u = new SpeechSynthesisUtterance(briefText(briefMod));
+      u.lang = "es-AR"; u.rate = 1; u.pitch = 1;
+      u.onend = stopSpeak; u.onerror = stopSpeak;
+      b.classList.add("playing"); b.textContent = "⏹ Parar";
+      window.speechSynthesis.speak(u);
+    }
+    document.getElementById("speakBtn").addEventListener("click", toggleSpeak);
+    document.getElementById("briefStart").addEventListener("click", () => startQuiz(briefMod));
+    document.getElementById("briefBack").addEventListener("click", backToPicker);
+
+    /* ---- quiz runner ---- */
+    function shuffle(a){ const x = a.slice(); for (let i = x.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; }
+
+    function startQuiz(id){
+      stopSpeak();
+      curMod = id; curQ = 0; correctCount = 0; gaps = []; locked = false;
+      order = shuffle(QUIZZES[id].questions.map((_, i) => i));
+      document.getElementById("picker").style.display = "none";
+      document.getElementById("briefing").classList.remove("active");
+      document.getElementById("result").classList.remove("active");
+      document.getElementById("runner").classList.add("active");
+      renderQ();
+    }
+
+    function renderQ(){
+      locked = false;
+      const qs = QUIZZES[curMod].questions;
+      const item = qs[order[curQ]];
+      document.getElementById("qCounter").textContent = (curQ + 1) + " / " + qs.length;
+      document.getElementById("qBar").style.width = ((curQ + 1) / qs.length * 100) + "%";
+      document.getElementById("qText").textContent = item.q;
+      const optsEl = document.getElementById("qOpts");
+      optsEl.innerHTML = "";
+      // barajar opciones manteniendo cuál es la correcta
+      const opts = item.options.map((text, i) => ({ text, ok: i === item.correct }));
+      shuffle(opts).forEach(o => {
+        const b = document.createElement("button");
+        b.className = "opt";
+        b.innerHTML = '<span>' + o.text + '</span>';
+        b.addEventListener("click", () => pick(b, o, item));
+        optsEl.appendChild(b);
+      });
+      const ex = document.getElementById("qExplain");
+      ex.className = "explain"; ex.innerHTML = "";
+      const next = document.getElementById("qNext");
+      next.disabled = true;
+      next.textContent = (curQ + 1 === qs.length) ? "Ver resultado" : "Siguiente";
+    }
+
+    function pick(btn, opt, item){
+      if (locked) return;
+      locked = true;
+      const all = document.querySelectorAll("#qOpts .opt");
+      all.forEach(b => {
+        b.disabled = true;
+        const txt = b.querySelector("span").textContent;
+        if (txt === item.options[item.correct]) { b.classList.add("correct"); b.innerHTML += '<span class="tick">✓</span>'; }
+      });
+      if (opt.ok) { correctCount++; }
+      else { btn.classList.add("wrong"); btn.innerHTML += '<span class="tick">✕</span>'; gaps.push(item.explain); }
+      const ex = document.getElementById("qExplain");
+      ex.innerHTML = "<b>" + (opt.ok ? "¡Bien! " : "Ojo: ") + "</b>" + item.explain;
+      ex.classList.add("show");
+      const nx = document.getElementById("qNext"); nx.disabled = false; nx.focus();
+    }
+
+    document.getElementById("qNext").addEventListener("click", () => {
+      const qs = QUIZZES[curMod].questions;
+      if (curQ + 1 < qs.length) { curQ++; renderQ(); }
+      else finish();
+    });
+
+    document.getElementById("qQuit").addEventListener("click", backToPicker);
+    document.getElementById("backToPicker").addEventListener("click", backToPicker);
+    document.getElementById("retry").addEventListener("click", () => startQuiz(curMod));
+
+    function backToPicker(){
+      stopSpeak();
+      document.getElementById("runner").classList.remove("active");
+      document.getElementById("result").classList.remove("active");
+      document.getElementById("briefing").classList.remove("active");
+      document.getElementById("picker").style.display = "block";
+      renderPicker();
+    }
+
+    /* ---- resultado + repaso espaciado ---- */
+    function finish(){
+      const total = QUIZZES[curMod].questions.length;
+      const passed = correctCount / total >= PASS;
+      const prog = loadProg();
+      const rec = prog[curMod] || { box: 0, history: [] };
+      rec.box = passed ? Math.min((rec.box || 0) + 1, INTERVALS.length - 1) : 0;
+      const interval = INTERVALS[rec.box];
+      rec.lastScore = correctCount; rec.total = total;
+      rec.lastDate = toISO(todayStart());
+      rec.nextReview = toISO(addDays(todayStart(), interval));
+      rec.history = (rec.history || []).concat([{ d: rec.lastDate, s: correctCount, t: total }]).slice(-12);
+      prog[curMod] = rec; saveProg(prog);
+
+      document.getElementById("runner").classList.remove("active");
+      const res = document.getElementById("result");
+      res.classList.add("active");
+      document.getElementById("qBar").style.width = "100%";
+
+      const ring = document.getElementById("scoreRing");
+      ring.className = "score-ring" + (passed ? " pass" : "");
+      document.getElementById("scoreNum").textContent = correctCount + "/" + total;
+      document.getElementById("resultTitle").textContent = passed ? "¡Aprobado!" : "Casi — repasemos";
+      document.getElementById("resultVerdict").textContent = passed
+        ? "Dominás " + curMod + ". El concepto está. Ahora lo fija el repaso espaciado."
+        : "Te faltan algunos conceptos puntuales. Mirá los huecos, hacé un mini-diagrama de cada uno y volvé mañana.";
+
+      const gapsEl = document.getElementById("resultGaps");
+      gapsEl.innerHTML = "";
+      if (gaps.length) {
+        gapsEl.innerHTML = '<div class="gh">▸ Repasá estos ' + gaps.length + ' (dibujá uno por cada uno):</div>';
+        gaps.forEach(g => { const d = document.createElement("div"); d.className = "gap"; d.textContent = g; gapsEl.appendChild(d); });
+      } else {
+        gapsEl.innerHTML = '<div class="gh">▸ Cero huecos. Impecable. 🎯</div>';
+      }
+      document.getElementById("resultSchedule").textContent = "🔁 Próximo repaso agendado: en " + interval + (interval === 1 ? " día" : " días") + " (caja " + (rec.box + 1) + "/5).";
+
+      // botón Google Calendar (paso 4: recordatorio automático)
+      const cal = document.getElementById("calBtn");
+      const startDay = rec.nextReview.replace(/-/g, "");
+      const endDay = toISO(addDays(new Date(rec.nextReview + "T00:00:00"), 1)).replace(/-/g, "");
+      const title = encodeURIComponent("🔁 Repasar " + curMod + " — ZAEL Academy");
+      const det = encodeURIComponent("Repaso espaciado del quiz de " + curMod + " (" + QUIZZES[curMod].title + "). Abrí ZAEL-ACADEMY.html → tab Quiz → " + curMod + ".");
+      cal.href = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + title + "&dates=" + startDay + "/" + endDay + "&details=" + det;
+      cal.style.display = "grid";
+    }
+
+    /* ---- progreso ---- */
+    function renderProgress(){
+      const prog = loadProg();
+      const list = document.getElementById("progList");
+      list.innerHTML = "";
+      Object.keys(QUIZZES).forEach(id => {
+        const m = QUIZZES[id];
+        const rec = prog[id];
+        const has = m.questions.length > 0;
+        let stHtml, meta = "";
+        if (rec) {
+          const du = daysUntil(rec.nextReview);
+          meta = "último: " + rec.lastScore + "/" + rec.total + " · " + rec.lastDate;
+          let dots = ""; for (let i = 0; i < 5; i++) dots += '<i class="' + (i <= rec.box ? "on" : "") + '"></i>';
+          if (du !== null && du <= 0) stHtml = '<span class="due big">¡HOY toca!</span><span class="box-dots">' + dots + '</span>';
+          else stHtml = '<span class="done big">en ' + du + (du === 1 ? " día" : " días") + '</span><span class="box-dots">' + dots + '</span>';
+        } else if (has) {
+          stHtml = '<span class="pend big">sin empezar</span>';
+        } else {
+          stHtml = '<span class="pend">sin cargar</span>';
+        }
+        const row = document.createElement("div");
+        row.className = "prog";
+        row.innerHTML = '<span class="pid">' + id + '</span>' +
+          '<div><div class="pt">' + m.title + '</div><div class="pmeta">' + (meta || (has ? "quiz listo para arrancar" : "lo cargo cuando cierres esta clase")) + '</div></div>' +
+          '<div class="pst">' + stHtml + '</div>';
+        list.appendChild(row);
+      });
+    }
+
+    /* ---- init ---- */
+    renderPicker();
+  </script>
+</body>
+</html>
