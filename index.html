@@ -358,6 +358,12 @@
         <h3 class="section-head">Tu progreso · repaso espaciado</h3>
         <p class="section-sub">Cada módulo aprobado avanza de caja (más espaciado). Si fallás, vuelve a 1 día. Los puntitos verdes = qué tan espaciado quedó.</p>
         <div class="prog-list" id="progList"></div>
+        <div id="gapAnalysis"></div>
+        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn ghost" id="exportBtn">📥 Exportar registro (JSON)</button>
+          <button class="btn ghost" id="importBtn">📂 Importar</button>
+          <input type="file" id="importFile" accept="application/json" style="display:none">
+        </div>
       </div></div>
     </section>
 
@@ -390,180 +396,138 @@
       M1: {
         title: "Ecosistemas y arquitectura",
         summary: [
-          "M1 es UNA sola cosa: armar un sistema que recibe los síntomas de un paciente, los clasifica con IA y le avisa al médico — y que nunca se caiga, porque en salud un error es la vida de alguien.",
-          "Webhook es el timbre: una URL que escucha y dispara el flujo cuando llega un paciente nuevo. Distinto del Schedule, que chequea cada tanto.",
-          "A la IA, que es Groq, la controlás con tres perillas: temperatura cero coma dos para que no invente, output schema JSON para que responda en un idioma que el sistema entienda, y los tokens que miden largo y costo.",
-          "Resiliencia es que el flujo degrade con gracia: si la IA falla, el setting Continue On Fail manda el caso por una ruta de rescate, que es el fallback, y ningún paciente queda sin atención.",
-          "Observabilidad: los logs cuentan la historia que leés después, y Sentry te grita en el momento justo en que algo se rompe.",
-          "Idempotencia es que correr el flujo una o cien veces da el mismo resultado, sin duplicar nada. Y las API keys van en Credentials, nunca hardcodeadas; si se filtran, revocás primero y generás la nueva después."
+          "Idempotencia no es reintentar. Es que si corrés el mismo workflow una o diez veces, el resultado final queda igual, sin romper nada ni duplicar datos. El retry es OTRA cosa: es volver a intentar cuando algo falla. Podés tener retry sin idempotencia y ahi duplicás; la idempotencia es la propiedad que hace que reejecutar sea seguro.",
+          "Webhook y Trigger no son lo mismo. Trigger es el concepto paraguas: cualquier cosa que arranca un flujo. El Webhook es UN tipo de trigger, una URL que escucha llamadas HTTP entrantes, como un timbre. Todo webhook es trigger, pero un Schedule tambien es trigger y no es webhook. Para algo que cambia 24/7 tipo Bitcoin va Schedule, no webhook.",
+          "Resiliencia en n8n: si una API externa se cae, el flujo no se tiene que morir. En el nodo activás On Error en Continue (using error output), despues un IF detecta el error, y la rama de fallback hardcodea una respuesta segura y avisa a un humano. El fallback es FIJO, se prepara ANTES de que falle, no se improvisa.",
+          "Seguridad de API keys: nunca hardcodear la key dentro del JSON del workflow, en n8n viven en el panel Credentials aparte. Si una key se filtra, el orden es revocar PRIMERO y generar la nueva DESPUES, nunca al reves, porque mientras no revoques la vieja key sigue abierta.",
+          "Temperatura controla cuan creativo o aleatorio responde el modelo: 0 es exacto y repetible, 1 es creativo y variado. Para clasificar o hacer triage va cerca de 0 (0 a 0.2) porque querés la misma respuesta ante el mismo input. Tokens son la unidad con la que cobran las APIs: importan por costo Y porque hay un limite de contexto, si te pasás el modelo corta la respuesta.",
+          "Un Agente cumple 4 cosas: percibe su entorno, planifica los pasos, ejecuta acciones (no solo responde, actúa) y usa lenguaje natural como interfaz. Si falta una, es un chatbot o un script lineal, no un agente. Y n8n es Low code: visual pero te deja meter codigo cuando hace falta; No code es cero codigo y Vibe coding es codigo que escribe la IA con tus instrucciones."
         ],
         questions: [
-          { q: "¿Qué es la idempotencia en un workflow?",
-            options: ["El flujo reintenta solo cuando algo falla","Correr 1 o 100 veces da el mismo resultado, sin duplicar ni romper","Cada ejecución usa datos distintos e independientes","El workflow se dispara sin trigger manual"],
-            correct: 1,
-            explain: "Idempotencia = ejecutar el mismo flujo 1 o 100 veces deja el mismo resultado, sin duplicar datos ni romper nada. Ojo: 'reintenta solo' es RETRY, otra cosa." },
-          { q: "¿Diferencia entre Trigger y Webhook?",
-            options: ["Trigger es el concepto general; el webhook es un tipo de trigger (URL que escucha HTTP)","El webhook es el concepto general; el trigger es un tipo de webhook","Son sinónimos, dos nombres para lo mismo","El trigger envía datos hacia afuera; el webhook los recibe"],
-            correct: 0,
-            explain: "Trigger = cualquier disparador (cron, evento, mensaje). Webhook = un tipo de trigger: una URL que escucha llamadas HTTP. Todo webhook es trigger, no al revés." },
-          { q: "Si una API KEY se compromete, ¿qué hacés PRIMERO?",
-            options: ["Genero la nueva primero, después revoco la vieja","Revoco primero la comprometida, después genero la nueva","La cambio hardcodeada directo en el JSON del workflow","Espero a la rotación mensual programada"],
-            correct: 1,
-            explain: "Si se filtra: revocás PRIMERO (cortás al que la robó), generás la nueva DESPUÉS. Y nunca va hardcodeada en el workflow — va en el panel Credentials." },
-          { q: "¿Diferencia entre Prompt User y Prompt System?",
-            options: ["System = rol y reglas del bot; User = lo que escribe la persona","User = rol y reglas; System = lo que escribe la persona","Son lo mismo, cambia sólo dónde se escriben","User define el rol; System es la respuesta del modelo"],
-            correct: 0,
-            explain: "System = libreto del bot (rol, reglas), se carga una vez y manda. User = lo que escribe la persona, cambia siempre. La respuesta del modelo es el output, ni uno ni otro." },
-          { q: "¿Qué controla la Temperatura y qué valor usás para clasificar?",
-            options: ["Cuán creativa/aleatoria es la respuesta; para clasificar cerca de 0","La creatividad; para clasificar la subís a 0.8","La velocidad de respuesta; para clasificar la ponés en 1","Cuántos tokens gasta; para clasificar la dejás en 1"],
-            correct: 0,
-            explain: "Temperatura = creatividad/aleatoriedad. 0 = exacto y repetible (mismo input, misma salida). Para clasificar (sobre todo en salud) querés 0–0.2." },
-          { q: "¿Cuáles son las 4 características de un Agente?",
-            options: ["Percibe el entorno · Planifica · Ejecuta acciones · Usa lenguaje natural","Percibe · Memoriza · Responde · Aprende solo","Recibe input · Procesa · Devuelve output · Se conecta a una API","Planifica · Ejecuta · Memoria infinita · No necesita supervisión"],
-            correct: 0,
-            explain: "Las 4: percibe el entorno, planifica, ejecuta acciones, usa lenguaje natural. Si falta una, es un chatbot, un script o una automatización lineal — no un agente." },
-          { q: "No code / Low code / Vibe Coding: ¿cuál es correcta? (¿dónde entra n8n?)",
-            options: ["No code = cero código; Low code = visual pero podés codear (n8n acá); Vibe = la IA escribe el código","n8n es No code: nunca se escribe una línea de código","No code = n8n; Low code = Python puro; Vibe = reciclar código viejo","Low code = cero código; No code = algo de código"],
-            correct: 0,
-            explain: "No code = cero código. Low code = visual pero permite código cuando hace falta → n8n es ESTO (las expresiones {{ }} ya son código). Vibe coding = la IA escribe el código por vos." },
-          { q: "¿Qué es un Fallback y qué setting de n8n lo hace posible?",
-            options: ["Reintentar el mismo nodo hasta que funcione; 'Retry On Fail'","Camino alternativo predefinido si el principal falla; 'Continue On Fail' / On Error → Continue","Volver al paso anterior del flujo; el nodo Wait","Una respuesta de error genérica que corta el workflow"],
-            correct: 1,
-            explain: "Fallback = ruta de rescate predefinida para cuando el nodo crítico falla. En n8n lo habilita On Error → Continue (Continue On Fail). Ojo: Retry es reintentar, no es fallback." },
-          { q: "¿Qué son los Tokens y por qué importa controlarlos?",
-            options: ["La cantidad de nodos del workflow","Unidad con la que el LLM mide texto; cobran por token (costo) y hay límite de contexto (si te pasás, corta)","Llaves de acceso a la API","Créditos de n8n para correr workflows"],
-            correct: 1,
-            explain: "Tokens = unidad con la que el LLM mide texto (1 palabra ≈ 1-2 tokens). Importan por costo (cobran por token) y por el límite de contexto: si te pasás, trunca la respuesta." },
-          { q: "¿Qué hace Sentry y en qué se diferencia de los Logs?",
-            options: ["Sentry = registro histórico; Logs = alerta en tiempo real","Son lo mismo; Sentry es la versión paga de los Logs","Logs = registro histórico (lo leés después); Sentry = te avisa en tiempo real cuando algo se rompe","Logs = errores; Sentry = métricas de performance"],
-            correct: 2,
-            explain: "Logs = el diario del sistema, lo leés después (pasivo, post-mortem). Sentry = la alarma de incendios, te grita al toque (activo). En producción van juntos." }
+          { q: "Un workflow procesa pagos. Por un error transitorio de red, n8n lo reejecuta entero. El flujo está bien diseñado y NO se generan cobros duplicados. Esta propiedad se llama:", options: ["Resiliencia", "Idempotencia", "Retry con backoff", "Fallback"], correct: 1, explain: "Idempotencia es que reejecutar produce el mismo resultado sin duplicar ni romper. El retry es el mecanismo que dispara la reejecución, no la propiedad que la hace segura: son cosas distintas.", tema: "Idempotencia" },
+          { q: "Alguien dice 'la idempotencia es básicamente reintentar la operación cuando falla'. ¿Por qué es incorrecto?", options: ["Porque idempotencia y retry son sinónimos exactos", "Porque idempotencia es la propiedad de que repetir la ejecución no cambie el resultado; reintentar es el mecanismo que la dispara, no la propiedad", "Porque la idempotencia solo aplica a triggers, no a operaciones", "Porque reintentar siempre duplica datos y la idempotencia nunca lo hace"], correct: 1, explain: "Reintentar (retry) es la acción de volver a ejecutar ante una falla; la idempotencia es la garantía de que esa reejecución sea segura. Confundirlas es el error típico: podés tener retry sin idempotencia y terminar duplicando.", tema: "Idempotencia" },
+          { q: "Necesitás seguir el precio del Bitcoin, que cambia a cada segundo las 24 horas. ¿Qué disparador conviene y por qué?", options: ["Webhook, porque escucha en tiempo real cada cambio de precio", "Schedule trigger, porque chequea cada cierto tiempo en vez de dispararse con cada variación", "Webhook, porque consume menos recursos que el polling", "Un nodo IF, porque bifurca según el precio"], correct: 1, explain: "Un webhook se activaría con cada centavo de variación = consumo brutal. Para algo que cambia constantemente va un Schedule que chequea periódicamente. El error es pensar que webhook = siempre la mejor opción para 'tiempo real'.", tema: "Webhook vs Trigger" },
+          { q: "¿Cuál de estas afirmaciones sobre Trigger y Webhook es la correcta?", options: ["Todo trigger es un webhook, pero no todo webhook es un trigger", "Todo webhook es un trigger, pero no todo trigger es un webhook", "Trigger y webhook son términos intercambiables en n8n", "Un webhook es un trigger que se ejecuta por cron en intervalos fijos"], correct: 1, explain: "Trigger es el concepto general (cualquier cosa que arranca un flujo); el webhook es un tipo específico de trigger que escucha HTTP. Un Schedule también es trigger y no es webhook, por eso la relación no es simétrica.", tema: "Webhook vs Trigger" },
+          { q: "En el sistema de triaje médico, el profe cambió el nombre del modelo a uno inexistente para forzar un error y mostrar que el flujo seguía igual. ¿Qué setting del nodo permite eso?", options: ["Retry On Fail con 3 reintentos", "On Error en Continue (using error output)", "Activar el modo idempotente del nodo", "Subir el max_tokens para que no se corte"], correct: 1, explain: "On Error → Continue (using error output) hace que el nodo no rompa el workflow y mande el error por la salida de error hacia el IF y el fallback. Retry solo reintenta lo mismo: no te da una rama alternativa para degradar con gracia.", tema: "Fallback" },
+          { q: "En el flujo de triaje, la rama de fallback asigna diagnosis='error' y triage_level='leve' con valores fijos. ¿Qué nombre recibe poner valores fijos así y por qué fijos acá?", options: ["Parsear, porque convierte el texto del LLM en variables", "Hardcodear, porque si el sistema cae igual se entrega una respuesta segura y predefinida", "Anonimizar, porque oculta los datos sensibles del paciente", "Idempotencia, porque garantiza el mismo resultado siempre"], correct: 1, explain: "Hardcodear es asignar valores fijos preparados de antemano; el fallback los usa para que ningún paciente quede sin respuesta si el LLM falla. Parsear es lo opuesto: extraer campos variables de un texto.", tema: "Fallback" },
+          { q: "Se filtró una API key tuya en un repo público. ¿Cuál es el orden correcto de acción según el profe?", options: ["Generar la nueva key primero y después revocar la vieja para no cortar el servicio", "Revocar la key comprometida primero y recién después generar una nueva", "Rotar la key sin revocar, porque rotar ya la invalida sola", "Mover la key al panel Credentials, que la encripta y la vieja deja de servir"], correct: 1, explain: "Revocar PRIMERO cierra el acceso del atacante de inmediato; recién ahí generás la nueva. Si generás primero y revocás después, la key filtrada sigue abierta en ese intervalo y eso es el error típico.", tema: "Seguridad API key" },
+          { q: "¿Cuál es la práctica correcta para manejar API keys en workflows de n8n que vas a compartir?", options: ["Pegar la key directo en el campo del nodo, total el JSON es privado", "Guardar la key en el panel Credentials, que vive aparte del workflow, y nunca hardcodearla en el JSON", "Escribir la key en una sticky note del canvas para tenerla a mano", "Ponerla como constante en un nodo Edit Field al inicio del flujo"], correct: 1, explain: "Las credenciales viven en el panel Credentials, separadas del workflow, así no viajan en el JSON exportado. Hardcodearla en un nodo o sticky note la expone apenas compartís el archivo.", tema: "Seguridad API key" },
+          { q: "Estás armando un clasificador de urgencia de síntomas. ¿Qué temperatura usás y por qué?", options: ["0.9, para que el modelo sea creativo y considere más diagnósticos", "0.2, para que la respuesta sea consistente y repetible ante el mismo input", "1.0, porque la temperatura no afecta tareas de clasificación", "0.5, un punto medio para equilibrar creatividad y precisión"], correct: 1, explain: "Para clasificar/triage querés determinismo: mismo síntoma → misma clasificación, auditable. Temperatura cerca de 0 (0.2) le quita imaginación al modelo. Subirla introduce variabilidad, justo lo que NO querés al clasificar.", tema: "Temperatura" },
+          { q: "Un alumno pregunta '¿qué pasa si me quedo corto de tokens en la respuesta?'. ¿Cuál es la respuesta correcta?", options: ["El modelo nunca se queda corto, siempre completa la idea", "El modelo recorta la respuesta a la mitad y no la completa", "Subir tokens siempre garantiza una respuesta de mejor calidad", "Los tokens solo afectan el costo, nunca el contenido de la respuesta"], correct: 1, explain: "Si el límite de tokens es bajo, el modelo corta la respuesta sin terminarla. Ojo con el otro distractor: más tokens NO significa mejor respuesta, eso depende del modelo, no de la cantidad.", tema: "Tokens" },
+          { q: "¿Cuál de estos sistemas cumple las 4 características de un Agente según el profe?", options: ["Un workflow lineal que recibe un webhook y guarda el dato en una planilla", "Un sistema que percibe su entorno, planifica los pasos, ejecuta acciones y usa lenguaje natural como interfaz", "Un chatbot que responde preguntas con respuestas predefinidas y nada más", "Un script de Python que corre por cron y manda un mail fijo"], correct: 1, explain: "Las 4 características son percibir, planificar, ejecutar acciones y lenguaje natural. Un chatbot que solo responde no planifica ni ejecuta acciones; un workflow lineal o un cron no usan lenguaje natural ni deciden pasos.", tema: "Caracteristicas de Agente" },
+          { q: "¿Por qué se dice que n8n es una herramienta Low code y no No code ni Vibe coding?", options: ["Porque no permite escribir nada de código, es 100% visual", "Porque es mayormente visual pero te deja escribir código (nodos Code, expresiones JS) cuando lo necesitás", "Porque todo el código lo escribe la IA a partir de tus instrucciones en lenguaje natural", "Porque solo se programa con código y no tiene interfaz visual"], correct: 1, explain: "Low code = base visual con la opción de meter código (expresiones, nodo Code). No code sería cero código; Vibe coding es código generado por IA desde lenguaje natural. n8n no es ninguno de esos dos.", tema: "Low/No/Vibe code" },
+          { q: "El LLM devuelve la respuesta como un string JSON dentro de un campo 'text'. Para usar cada campo como variable en los nodos siguientes, ¿qué hacés?", options: ["Lo dejás como está, n8n lee los campos del string automáticamente", "Lo parseás con JSON.parse() para convertir el string en un objeto y acceder a sus propiedades", "Subís la temperatura para que el modelo devuelva variables en vez de texto", "Activás Continue On Fail para que el campo se convierta solo"], correct: 1, explain: "Parsear con JSON.parse($json.text).campo convierte el string en objeto JS real y te da acceso a cada propiedad. Sin parsear, el JSON sigue siendo texto plano y los nodos no pueden extraer los campos.", tema: "Output Schema JSON" },
+          { q: "El profe definió Logs y Sentry con la frase 'uno cuenta la historia, el otro grita cuando algo se prende fuego'. ¿Cuál es cuál?", options: ["Logs gritan en tiempo real ante un error; Sentry guarda el historial para revisar después", "Logs son el registro histórico que revisás después; Sentry alerta en tiempo real cuando algo se rompe", "Logs y Sentry hacen exactamente lo mismo, son intercambiables", "Sentry es el diario del sistema y los Logs son la alarma contra incendios"], correct: 1, explain: "Los Logs son el 'diario' que leés post-mortem (pasivo); Sentry es la 'alarma' que avisa al toque cuando hay una falla (activo). El distractor invierte los roles, que es la confusión típica entre ambos.", tema: "Observabilidad" }
         ]
       },
       M2: {
         title: "Bases de conocimiento y RAG",
         summary: [
-          "RAG significa Retrieval Augmented Generation. No es un nodo mágico: es una arquitectura, un conjunto de nodos que hacen que la IA busque en TUS documentos antes de responder, para no alucinar.",
-          "Todo sistema RAG son DOS flujos separados: la ingesta, donde vectorizás el documento una sola vez, y la consulta, donde buscás y respondés cada vez que llega un paciente. Se separan a propósito, para no volver a picar el PDF en cada mensaje.",
-          "Un embedding es convertir texto en una lista de números, los vectores, que captura el significado. Cohere es el traductor: agarra tu texto y lo escupe como mil veinticuatro números. Por eso 'dolor de cabeza' y 'migraña' quedan cerca aunque no compartan ni una letra.",
-          "La base vectorial, en el curso Pinecone, guarda esos vectores y busca por cercanía de significado, no por palabra exacta. Por eso le gana a un buscador tradicional: entiende sinónimos.",
-          "Chunking es picar el documento en pedazos antes de vectorizar. La regla de oro es nunca cortar una idea, una dosis o una tabla a la mitad. El Recursive Character Text Splitter es el recomendado porque respeta la coherencia del texto.",
-          "Grounding es obligar al modelo a responder solo con los documentos. Si le preguntan algo que no está en el PDF y el bot dice 'no encuentro esa información', es un éxito: evitaste la alucinación."
+          "RAG no es un nodo magico, es una ARQUITECTURA - varios nodos laburando juntos. Si buscas 'RAG' en n8n no aparece.",
+          "Son DOS flujos separados: ingesta (vectorizo el doc UNA vez) y consulta (busco y respondo en CADA pregunta). Se separan para no re-vectorizar el PDF entero cada vez.",
+          "Embedding = traducir texto a numeros (vectores). Cohere es 'el traductor' y genera 1024 dimensiones, que SI o SI tienen que matchear las dimensiones del index de Pinecone.",
+          "Pinecone busca por cercania SEMANTICA (coseno), no por palabra exacta - por eso 'dolor de cabeza' encuentra 'cefalea'. Una base tradicional no.",
+          "Chunking: picar el doc en pedazos con sentido ANTES de embeber. La regla de oro es no cortar una idea, una dosis ni una tabla a la mitad. El Recursive Character Text Splitter es el recomendado.",
+          "Grounding = el modelo responde SOLO con los docs y dice 'no encuentro esa info' cuando no esta. Eso no es una falla, es el exito (evita alucinacion)."
         ],
         questions: [
-          { q: "¿Cuál es el objetivo principal de la fase de INGESTA?",
-            options: ["Extraer el texto del documento, vectorizarlo y guardarlo en la base vectorial (se hace una vez)","Atender las dudas del paciente en tiempo real por chat","Generar la respuesta final que lee el paciente","Reentrenar el LLM con los datos del hospital"],
-            correct: 0,
-            explain: "Ingesta = extraer el texto, vectorizarlo y guardarlo en la bóveda, una sola vez. Atender al paciente en tiempo real es la CONSULTA, que es el otro flujo." },
-          { q: "¿Por qué hay que configurar el HTTP Request para devolver el PDF como file / binary?",
-            options: ["Porque el PDF no es texto plano: como texto se leería como código incomprensible y fallaría","Porque el binario ocupa menos espacio en la base","Porque así se saltea el paso de chunking","Porque Pinecone solo acepta archivos binarios"],
-            correct: 0,
-            explain: "El PDF tiene su propia estructura (no es texto plano). Si lo leés como texto ves código ilegible y falla. Por eso se baja como binario: Response Format = File." },
-          { q: "En la analogía del 'traductor ciego', ¿qué función cumple el Data Loader + Text Splitter?",
-            options: ["Es el cuchillo que pica el texto en fragmentos (chunking)","Es el que traduce los números de vuelta a palabras","Es el que genera los embeddings","Es el que guarda los vectores en Pinecone"],
-            correct: 0,
-            explain: "El Data Loader con el Text Splitter pica el texto en chunks. No le podés pasar 10.000 caracteres de una; hay que cortarlo en partes con sentido." },
-          { q: "¿Qué hace exactamente el modelo de embedding de Cohere?",
-            options: ["Lee el texto, comprende el significado y lo convierte en coordenadas matemáticas (vectores)","Revisa y corrige la ortografía del texto","Traduce los números de vuelta a palabras para el paciente","Redacta el mensaje final que recibe el paciente"],
-            correct: 0,
-            explain: "Cohere es el traductor: texto a 1024 números (vectores) que capturan el significado. No corrige ortografía ni traduce de vuelta (eso lo hace el AI Agent en la consulta)." },
-          { q: "Al configurar Pinecone, ¿por qué se escribe 1024 en las dimensiones?",
-            options: ["Porque el modelo de Cohere elegido genera exactamente 1024 números por fragmento (tienen que matchear)","Porque es el límite del tier gratis de Pinecone","Porque es la resolución del PDF","Porque es el tamaño del chunk en caracteres"],
-            correct: 0,
-            explain: "Las dimensiones del index deben MATCHEAR el modelo de embeddings. El Cohere multilingüe del profe genera 1024 números por chunk, así que el index va en 1024. No es arbitrario ni un límite del plan." },
-          { q: "¿Por qué una base vectorial le gana a un buscador tradicional de palabras exactas?",
-            options: ["Porque compara distancias matemáticas y encuentra significado aunque el paciente use sinónimos","Porque es más rápida leyendo texto plano","Porque almacena más cantidad de documentos","Porque corrige los errores de tipeo del paciente"],
-            correct: 0,
-            explain: "La vectorial busca por cercanía semántica: 'dolor de cabeza' queda cerca de 'cefalea' y 'migraña'. Un buscador tradicional necesita la coincidencia exacta y no relaciona sinónimos." },
-          { q: "Si por privacidad NINGÚN dato puede subir a la nube, ¿qué base vectorial usás en lugar de Pinecone?",
-            options: ["Qdrant (corre local, en tu propia máquina)","Google Drive","Cohere","LlamaCloud"],
-            correct: 0,
-            explain: "Qdrant corre local y cumple la restricción de no estar en internet. Google Drive necesita internet, Cohere es el embedding (no una base de datos) y LlamaCloud es cloud (parsing)." },
-          { q: "¿Por qué el médico virtual (consulta) va en un workflow SEPARADO del de ingesta?",
-            options: ["Para no tener que descargar y picar el PDF completo cada vez que el paciente escribe","Porque n8n no permite más de un trigger por workflow","Porque la consulta necesita otro modelo de embeddings","Porque la ingesta borra la base en cada corrida"],
-            correct: 0,
-            explain: "Regla de oro: ingesta = vectorizar una vez; consulta = buscar y responder, iterativo. Separarlos evita re-procesar el PDF entero en cada mensaje." },
-          { q: "¿Qué pasa si dejás el AI Agent sin conectar nada en la ranura Memory?",
-            options: ["Sufre amnesia: procesa cada mensaje como si fuera el primero, pero NO da error","El workflow tira error y no se ejecuta","Pierde el acceso a Pinecone","Responde más lento pero recuerda igual"],
-            correct: 0,
-            explain: "Sin Memory el agente no recuerda los mensajes previos (amnesia a corto plazo), pero se ejecuta igual sin error. No hace falta llenar todas las ranuras del nodo." },
-          { q: "Al enchufar Pinecone como tool del agente, ¿para qué sirve el campo Description (obligatorio)?",
-            options: ["Es el manual que la IA lee para saber CUÁNDO usar esa herramienta","Es el mensaje que ve el paciente al usar el bot","Es la descripción del index para otros programas","Es opcional, solo decorativo"],
-            correct: 0,
-            explain: "El Description lo lee el cerebro (el modelo) para decidir en qué situaciones usar la tool. El paciente nunca lo lee." },
-          { q: "El paciente escribe 'tengo tos', se vectoriza y se busca en Pinecone. ¿Qué le devuelve Pinecone al agente?",
-            options: ["Solo los fragmentos con mayor coincidencia, no el PDF completo","El PDF entero de 30 páginas","Una respuesta ya redactada para el paciente","Los 1024 números sin traducir"],
-            correct: 0,
-            explain: "Pinecone devuelve solo los chunks más cercanos semánticamente (no todo el PDF). Esos fragmentos relevantes se le inyectan al LLM como contexto." },
-          { q: "Si preguntan por un síntoma que NO está en el PDF y el bot responde 'no encuentro esa información', ¿por qué es un éxito?",
-            options: ["Porque demuestra grounding: el modelo se basa solo en los documentos y evita alucinar","Porque ahorra tokens al no responder","Porque el paciente entiende que el sistema está roto","Porque obliga a reentrenar el modelo"],
-            correct: 0,
-            explain: "Eso es grounding: el bot responde SOLO con lo que está en los documentos seguros. Decir 'no encuentro esa info' en vez de inventar significa que evitaste la alucinación. Éxito." }
+          { q: "Una companera dice 'voy a buscar el nodo RAG en n8n para armar el sistema'. Por que esta conceptualmente equivocada?", options: ["Porque el nodo se llama 'Retrieval' y no 'RAG', es solo un tema de nombre", "Porque RAG es una arquitectura - un conjunto de nodos trabajando juntos (Vector Store, embeddings, loader, splitter, agente) - no un nodo unico", "Porque el nodo RAG existe pero solo esta disponible en la version paga de n8n", "Porque RAG se arma exclusivamente con codigo en un nodo Code, no con nodos visuales"], correct: 1, explain: "El profe lo fijo como regla: no existe un nodo magico 'RAG', es una arquitectura de varios nodos. No es un problema de naming ni de licencia.", tema: "Que es RAG" },
+          { q: "Por que un sistema RAG se construye como DOS workflows separados (ingesta y consulta) en vez de uno solo?", options: ["Porque n8n no permite tener un Manual Trigger y un Chat Trigger en el mismo workflow", "Porque la ingesta vectoriza el documento una sola vez, mientras la consulta corre en cada pregunta - unirlos obligaria a re-descargar y re-vectorizar el PDF entero por cada mensaje", "Porque la ingesta usa Cohere y la consulta usa un modelo de embeddings distinto e incompatible", "Porque separarlos es la unica forma de que Pinecone acepte mas de un documento por index"], correct: 1, explain: "La ingesta es uso interno y se corre cuando actualizas la base; la consulta escala con el uso. Unirlos seria ineficiente (re-vectorizar en cada consulta). No es una limitacion tecnica de triggers ni de Pinecone.", tema: "Ingesta vs Consulta" },
+          { q: "Al crear el index en Pinecone pusiste 1024 dimensiones. De donde sale ese numero?", options: ["Es el limite de vectores que permite el tier gratuito de Pinecone", "Es la cantidad de numeros (vectores) que el modelo de embedding de Cohere genera por cada fragmento - tiene que coincidir si o si", "Es el tamano del chunk medido en caracteres que configuraste en el Text Splitter", "Es la resolucion a la que LlamaParse convierte las paginas del PDF"], correct: 1, explain: "El index debe matchear la dimensionalidad del modelo de embeddings: Cohere multilingue genera 1024 floats por chunk. No es un limite del free tier, ni el chunk size, ni nada de LlamaParse.", tema: "Dimensiones 1024" },
+          { q: "Tu companero asume que elegir un modelo de embeddings de 3072 dimensiones en vez de 1024 le va a dar respuestas mas precisas. Que le corregirias segun el profe?", options: ["Tiene razon: mas dimensiones siempre captura mejor el significado y mejora la precision", "Mas dimensiones no significa mas precision - suele complejizar el computo, gastar mas tokens y mas almacenamiento sin necesariamente mejorar el resultado", "Da igual la cantidad de dimensiones porque Pinecone las normaliza todas a 1024 internamente", "Mas dimensiones empeora SIEMPRE la precision, conviene usar el modelo de menos dimensiones disponible"], correct: 1, explain: "El profe insistio con 'mas dimensiones no es mas preciso': es un trade-off (mas costo y computo). Pero tampoco es que empeore siempre ni que Pinecone normalice - es matiz vs costo.", tema: "Dimensiones 1024" },
+          { q: "En el flujo de ingesta, por que hay que configurar el HTTP Request con Response Format = File (binario) y no como JSON o texto?", options: ["Porque Pinecone solo acepta archivos binarios como input directo", "Porque el PDF no es texto plano: tiene una estructura propia que, leida como texto, da codigo incomprensible y falla - hay que pasarlo como binario para procesarlo bien", "Porque el formato File es mas rapido de descargar que JSON", "Porque asi el HTTP Request salta el paso de chunking automaticamente"], correct: 1, explain: "Un PDF no es texto plano; si lo lees como texto te encontras con caracteres ilegibles y el flujo se rompe. Por eso se baja como binario. No tiene que ver con velocidad ni con saltear chunking.", tema: "PDF binario / HTTP" },
+          { q: "Dentro del nodo Pinecone Vector Store de la ingesta, que rol cumple cada sub-input conectado (Cohere, Default Data Loader, Text Splitter)?", options: ["Cohere descarga el PDF, el Data Loader lo vectoriza y el Text Splitter lo guarda en la base", "Cohere convierte el texto en vectores (el traductor), el Data Loader prepara el documento ingerible y el Text Splitter lo trocea en chunks", "Los tres hacen embeddings en paralelo para acelerar el proceso", "Cohere es el LLM que genera la respuesta, el Data Loader la formatea y el Text Splitter la corta para el chat"], correct: 1, explain: "Cohere = embeddings (traductor), Data Loader = puente del archivo crudo a documento ingerible, Text Splitter = chunking. Cohere no descarga nada ni es el LLM de generacion.", tema: "Ingesta vs Consulta" },
+          { q: "Por que el profe recomienda el Recursive Character Text Splitter por encima del Character Text Splitter o el Token Text Splitter?", options: ["Porque es el unico que permite definir el chunk size en tokens", "Porque intenta separadores en orden de prioridad (parrafo, linea, espacio, caracter) y asi respeta mejor la coherencia semantica del texto", "Porque genera chunks de tamano exacto y predecible para no pasarse del limite de la API", "Porque es el unico compatible con embeddings de Cohere"], correct: 1, explain: "El recursivo prueba parrafo -> linea -> espacio -> caracter, respetando la estructura. El de tamano exacto/predecible es mas bien el Token Splitter, que corta sin mirar el sentido.", tema: "Chunking" },
+          { q: "Cual es la consecuencia concreta de un chunking mal hecho que parte una dosis a la mitad (ej: 'tomar 5 mg cada' | '8 horas durante 7 dias')?", options: ["El embedding falla y el chunk no se guarda en Pinecone", "El sistema recupera informacion incompleta y el LLM responde con datos parciales - riesgo clinico real", "Pinecone duplica el chunk automaticamente para compensar el corte", "No pasa nada porque el chunk overlap siempre reconstruye la dosis completa"], correct: 1, explain: "Un corte que rompe una unidad de sentido devuelve mitad de la informacion y el modelo completa la otra mitad inventando. El overlap ayuda pero no garantiza reconstruir, y el embedding igual se genera (no falla).", tema: "Chunking" },
+          { q: "Por que una base de datos vectorial encuentra el protocolo correcto cuando el paciente escribe 'me duele la cabeza' aunque el documento diga 'manejo de cefalea', y una base tradicional no?", options: ["Porque la base tradicional no soporta el idioma espanol y la vectorial si", "Porque la vectorial compara distancias matematicas entre vectores (cercania semantica), mientras la tradicional busca coincidencia exacta de texto (keyword)", "Porque la base vectorial corrige automaticamente los sinonimos antes de guardar el texto", "Porque la tradicional solo funciona con numeros y la vectorial con palabras"], correct: 1, explain: "La vectorial mide cercania semantica por coseno, asi 'dolor de cabeza' cae cerca de 'cefalea'. La tradicional hace keyword matching exacto y no relaciona sinonimos. No es tema de idioma ni de correccion de sinonimos.", tema: "Pinecone" },
+          { q: "Por privacidad, ningun dato del hospital puede salir a la nube. Que base vectorial usarias en lugar de Pinecone, y por que las otras opciones no sirven?", options: ["Cohere, porque corre local y no necesita internet", "Qdrant, porque puede correr local en tu propia maquina; Pinecone y LlamaCloud son cloud y Cohere ni siquiera es una base de datos", "LlamaCloud, porque parsea los documentos de forma local sin subirlos", "Weaviate en su version SaaS, porque encripta los datos en transito"], correct: 1, explain: "Qdrant corre local y cumple la restriccion. Cohere es el modelo de embeddings (no una base), y Pinecone/LlamaCloud son servicios cloud que justamente romperian la restriccion de privacidad.", tema: "Qdrant local" },
+          { q: "En el flujo de consulta, que pasa si dejas el AI Agent SIN conectar nada en la ranura Memory?", options: ["El workflow tira error y no se ejecuta hasta llenar la ranura", "El agente funciona igual pero sufre amnesia: procesa cada mensaje como si fuera el primero, sin recordar el contexto de la conversacion", "El agente pierde acceso a Pinecone y deja de poder buscar en los documentos", "El agente empieza a alucinar porque la Memory es lo que evita las alucinaciones"], correct: 1, explain: "Sin Memory el agente corre igual (el profe lo demostro), solo pierde el contexto de los mensajes previos. No da error, no afecta el acceso a la tool, y no es lo que controla las alucinaciones (eso es grounding).", tema: "Memory del agente" },
+          { q: "Al enchufar Pinecone como tool del AI Agent, el campo Description es obligatorio. Quien lo lee y para que?", options: ["Lo lee el paciente para entender que puede preguntarle al bot", "Lo lee el modelo (el cerebro del agente) para decidir en que situaciones usar esa herramienta", "Lo leen otros programas externos (CRM, base de datos) que se conectan al workflow", "Es solo una etiqueta visual para que vos te organices en el canvas, no la lee nadie"], correct: 1, explain: "La Description es el manual que el modelo lee para saber cuando invocar la tool. El paciente nunca la ve y no es para sistemas externos ni decorativa.", tema: "Tool Description" },
+          { q: "El bot recibe 'tengo tos', Cohere lo traduce a numeros y busca en Pinecone. Que le devuelve Pinecone al agente?", options: ["El PDF completo de 30 paginas para que el agente lo lea entero", "Solo los fragmentos (chunks) con mayor coincidencia semantica, no el documento entero", "Una lista de vectores en formato numerico que el agente interpreta directamente", "Un resumen generado por Pinecone de todo el documento"], correct: 1, explain: "Pinecone devuelve solo los chunks mas cercanos (mayor score), no el PDF completo. Y la respuesta vuelve como texto recuperado, no como vectores crudos que el LLM no entiende; Pinecone tampoco genera resumenes.", tema: "Pinecone" },
+          { q: "Le preguntan al bot por un sintoma que NO esta en el PDF y responde 'no encuentro esa informacion en los protocolos oficiales'. Por que esto es un EXITO y como se llama el concepto?", options: ["Es una falla: el bot deberia haber inventado una respuesta plausible para no dejar al usuario sin nada", "Es exito - se llama grounding: el modelo se basa estrictamente en los documentos y admite cuando no sabe, evitando alucinar", "Es exito y se llama few-shot: el modelo aprendio del ejemplo a responder asi", "Es una falla del retrieval: significa que Pinecone no busco bien y hay que rehacer el index"], correct: 1, explain: "Grounding es forzar al modelo a responder solo con los docs y admitir cuando algo no esta. Que diga 'no lo se' demuestra que no alucina. No es falla del retrieval ni few-shot, y inventar seria justo lo que se quiere evitar.", tema: "Grounding" }
         ]
       },
       M3: {
         title: "Multi-modalidad (imagen, audio)",
         summary: [
-          "Multimodalidad = la IA procesa varios TIPOS de dato a la vez: texto, imagen y audio. La C5 le dio OJOS al modelo (imagen) y la C6 le dio OÍDO y VOZ (audio).",
-          "Para la computadora una imagen es un array de números (píxeles): en escala de grises, negro es 0 y blanco es 255. Una red neuronal (CNN) procesa esos números y devuelve probabilidades. Clave: la IA aprende de millones de ejemplos, no de reglas.",
-          "Con una imagen la IA hace 3 tareas: clasificar (qué es), detectar (dónde está) y segmentar (el contorno exacto). Y modelos como Nano Banana de Gemini generan o editan imágenes. Regla ética: solo para educación, nunca diagnóstico sin un profesional.",
-          "STT, Speech to Text, es voz a texto, con Whisper. TTS, Text to Speech, es texto a voz, con ElevenLabs. STT más un LLM más TTS arman el loop conversacional. La latencia, no la inteligencia, es hoy el límite.",
-          "Encadenamiento de modelos, o pipeline: la salida de un modelo es la entrada del siguiente. El audio va a Whisper que lo transcribe, y ese texto va al LLM que lo resume. Dos modelos especializados hacen cada parte mejor que uno solo.",
-          "Práctica con Telegram: el chat id se busca en el Trigger. El gotcha del audio: Telegram entrega la nota de voz como binario sin extensión, hay que renombrarla a punto ogg con un nodo Code antes de Whisper o falla. Whisper se llama por HTTP, con form-data, no con JSON."
+          "Multimodalidad no es 'varios modelos' — es UN modelo que procesa varios TIPOS de dato a la vez: texto + imagen + audio juntos, como un medico que mira la foto Y lee lo que le contas.",
+          "Para la compu una imagen es un array de pixeles (numeros): en escala de grises 0 = negro y 255 = blanco. La red neuronal/CNN no sigue reglas, aprende de millones de ejemplos y devuelve probabilidades.",
+          "No todos los modelos VEN: hay que elegir uno multimodal (Llama 4 Scout, Gemini). En Telegram, una foto-con-texto trae el texto en message.caption, NO en message.text — por eso se usa el operador || como fallback.",
+          "Audio: STT (Whisper) pasa voz a texto; TTS (ElevenLabs) pasa texto a voz. No confundir la direccion. El cuello de botella hoy es la latencia, no la inteligencia.",
+          "Pipeline / encadenamiento de modelos: la salida de uno es la entrada del siguiente (audio -> Whisper -> su texto entra al LLM que resume). Dos modelos especializados rinden mejor que uno solo haciendo todo.",
+          "Gotcha del audio de Telegram: llega como binario SIN extension, hay que renombrarlo a .ogg con un nodo Code antes de Whisper. Y Whisper se llama por HTTP con form-data (no JSON) porque viaja un archivo binario."
         ],
         questions: [
-          { q: "¿Qué es la multimodalidad?",
-            options: ["Que la IA procesa varios tipos de dato a la vez: texto, imagen y audio","Que la IA usa varios modelos de texto en paralelo","Que el workflow tiene varios triggers distintos","Que la respuesta se entrega en varios idiomas"],
-            correct: 0,
-            explain: "Multimodalidad = un mismo sistema procesa distintos TIPOS de dato (texto + imagen + audio) juntos. La C5 fue imagen, la C6 audio." },
-          { q: "Para la computadora, ¿qué ES una imagen?",
-            options: ["Un array (grilla) de números: cada píxel es un número (0 negro, 255 blanco)","Un archivo de texto con la descripción de lo que se ve","Un único número que identifica la foto","Una fórmula matemática que dibuja la figura"],
-            correct: 0,
-            explain: "Una imagen es una grilla de píxeles = números. En escala de grises, 0 = negro y 255 = blanco. Ese array es lo que entra a la red neuronal." },
-          { q: "Con una imagen clínica, ¿cuáles son las 3 tareas que puede hacer la IA?",
-            options: ["Clasificar (qué es) · Detectar (dónde está) · Segmentar (contorno exacto)","Leer · Escribir · Traducir","Comprimir · Guardar · Enviar","Filtrar · Recortar · Colorear"],
-            correct: 0,
-            explain: "Clasificar = sana o patológica. Detectar = recuadro sobre la anomalía. Segmentar = pintar el contorno píxel a píxel (para guiar cirugías)." },
-          { q: "¿De qué APRENDE una red neuronal para reconocer imágenes?",
-            options: ["De millones de ejemplos (no de reglas escritas a mano)","De reglas fijas que le programa un humano","De un único ejemplo perfecto","De la API key que le pasamos"],
-            correct: 0,
-            explain: "La IA aprende de millones de ejemplos, no de reglas. Por eso si tu garabato se sale del patrón visto, se confunde. Es estadística, no instrucciones." },
-          { q: "En la práctica de imagen, el modelo por defecto de Groq NO veía imágenes. ¿Cuál SÍ funcionó?",
-            options: ["Llama 4 Scout (meta-llama/llama-4-scout), que es multimodal","Llama 3 8B, el más liviano","Whisper, el de audio","Cohere, el de embeddings"],
-            correct: 0,
-            explain: "Llama 4 Scout SÍ es multimodal (ve imágenes), por eso sirve aunque sea Groq. Alternativa: Gemini 2.5 Flash. Whisper es audio y Cohere es embeddings." },
-          { q: "El paciente manda una FOTO con un texto al pie por Telegram. ¿Dónde llega ese texto?",
-            options: ["En message.caption (NO en message.text)","En message.text, siempre","En message.photo","En el System Prompt"],
-            correct: 0,
-            explain: "Foto + texto → el texto viaja en caption, no en text. Por eso se usa la expresión caption || text || default, para cubrir todos los casos." },
-          { q: "STT y TTS, ¿cuál convierte qué?",
-            options: ["STT = voz a texto (Whisper) · TTS = texto a voz (ElevenLabs)","STT = texto a voz · TTS = voz a texto","Los dos convierten voz a texto","Los dos generan imágenes"],
-            correct: 0,
-            explain: "STT (Speech to Text) escucha y escribe → Whisper. TTS (Text to Speech) lee y habla → ElevenLabs. Juntos con un LLM en el medio = loop conversacional." },
-          { q: "¿Qué hace Whisper?",
-            options: ["Transcribe audio a texto (STT): identifica el habla y la pasa a palabras escritas","Convierte texto en voz hablada","Analiza imágenes y las describe","Vectoriza texto para buscarlo en Pinecone"],
-            correct: 0,
-            explain: "Whisper (de OpenAI, vía Groq) es STT: agarra un audio y lo limpia y transcribe a texto. Multilingüe, tolera ruido y acentos." },
-          { q: "¿Qué es el encadenamiento de modelos (pipeline)?",
-            options: ["Usar la salida de un modelo como entrada del siguiente (audio → Whisper → su texto → LLM)","Correr el mismo modelo varias veces seguidas","Conectar dos workflows con un webhook","Usar dos API keys del mismo modelo"],
-            correct: 0,
-            explain: "Pipeline = la salida de uno alimenta al otro. Whisper transcribe el audio, y ESE texto entra al LLM que lo resume. Cada modelo especializado hace su parte mejor." },
-          { q: "Telegram entrega la nota de voz como binario SIN extensión. ¿Por qué hace falta un nodo Code antes de Whisper?",
-            options: ["Para renombrar el binario a .ogg: Whisper necesita una extensión válida o rebota el archivo","Para traducir el audio a otro idioma","Para comprimir el audio y que pese menos","Para encriptar el audio antes de mandarlo"],
-            correct: 0,
-            explain: "El gotcha clave: sin extensión, Whisper no procesa el archivo. El nodo Code le pone fileName .ogg, extensión y mimeType. Recién ahí Whisper lo acepta." },
-          { q: "¿Por qué Whisper se llama por HTTP con form-data y no con JSON?",
-            options: ["Porque mandamos un archivo binario (el audio), no datos de texto estructurados","Porque JSON es más lento","Porque Groq no soporta JSON","Porque form-data encripta mejor"],
-            correct: 0,
-            explain: "Whisper recibe un ARCHIVO (binario), y los archivos van como multipart/form-data, no como JSON. Por eso el Body Content Type del HTTP Request es form-data." },
-          { q: "En el AI Agent (el 'orquestador'), ¿qué subnodo NO puede faltar?",
-            options: ["El modelo de chat (sin él tira error y no corre); memoria y tools son opcionales","La memoria (sin ella no arranca)","Una tool de Google Sheets","El nodo Whisper conectado"],
-            correct: 0,
-            explain: "El AI Agent es el orquestador: modelo de chat (OBLIGATORIO) + memoria (opcional) + tools (opcional). Sin modelo de chat, n8n avisa 'chat model sub node must be connected'." }
+          { q: "En el contexto del modulo, multimodalidad significa principalmente que:", options: ["Un mismo modelo procesa varios TIPOS de dato a la vez (texto, imagen, audio)", "Se usan varios modelos distintos conectados en cadena dentro del workflow", "El workflow puede correr en varias plataformas (Telegram, WhatsApp, web)", "El modelo responde en varios idiomas segun el del usuario"], correct: 0, explain: "Multimodalidad = un modelo que combina distintas modalidades de dato (texto+imagen+audio) en simultaneo, como un medico que mira la foto y lee lo que le contas. Encadenar varios modelos es 'pipeline', un concepto distinto.", tema: "Multimodalidad" },
+          { q: "Para la computadora, una imagen en escala de grises es fundamentalmente:", options: ["Un formato comprimido (JPG/PNG) que el modelo abre como archivo", "Un array de numeros donde cada pixel tiene un valor, con 0 = negro y 255 = blanco", "Una descripcion en texto generada automaticamente de lo que se ve", "Un vector de embeddings de 1024 dimensiones igual que en RAG"], correct: 1, explain: "La compu no 've' una imagen: ve una grilla de numeros (pixeles), 0 negro y 255 blanco en grises. Los embeddings de 1024 dims son de la fase de RAG con texto, no de como se representa una imagen.", tema: "Imagen como pixeles" },
+          { q: "Segun la clase, una red neuronal / CNN reconoce que hay en una imagen porque:", options: ["Sigue un conjunto de reglas explicitas que un programador le escribio", "Aprendio de millones de ejemplos y devuelve probabilidades, no certezas", "Compara la imagen pixel por pixel contra una base de datos de fotos", "Convierte la imagen en texto y despues razona sobre ese texto"], correct: 1, explain: "Idea central: la IA aprende de datos/ejemplos, NO de reglas, y su salida es probabilistica (ej. 0.91 para '7'). Por eso si el input se sale del patron visto, se confunde. No hay reglas escritas a mano.", tema: "Red neuronal aprende" },
+          { q: "Las tres tareas clasicas de IA sobre una imagen, de menor a mayor detalle, son:", options: ["Detectar, clasificar, segmentar", "Segmentar, detectar, clasificar", "Clasificar, detectar, segmentar", "Clasificar, segmentar, generar"], correct: 2, explain: "Clasificar (que es: una etiqueta) -> Detectar (donde esta: un recuadro) -> Segmentar (contorno exacto pixel por pixel, ej. para guiar cirugias). Generar imagenes es otra cosa (modelos generativos), no una de las tres tareas de analisis.", tema: "Tareas de imagen" },
+          { q: "En la practica de Telegram, el modelo de Groq por defecto no pudo analizar la foto. El que SI funciono fue Llama 4 Scout porque:", options: ["Es mas rapido y por eso Groq lo prioriza para imagenes", "Es un modelo multimodal: a diferencia del resto, SI puede ver imagenes", "Tiene mayor ventana de contexto para textos largos", "Permite temperatura mas baja, ideal para uso medico"], correct: 1, explain: "No todo modelo VE. Llama 4 Scout es la excepcion multimodal en Groq (tiene vision); el modelo por defecto era solo texto. La temperatura baja o el contexto no tienen nada que ver con poder o no interpretar una imagen.", tema: "Modelos que ven" },
+          { q: "Un paciente manda por Telegram una FOTO con una descripcion escrita al pie. Esa descripcion llega en:", options: ["message.text, como cualquier mensaje", "message.caption (por eso message.text da undefined)", "message.photo, junto con la imagen", "message.voice, porque acompana a un archivo"], correct: 1, explain: "Cuando hay una foto, el texto que la acompana viaja en message.caption, no en message.text (que queda undefined). Confundirlos es el error tipico que rompe el prompt del agente.", tema: "Caption vs text" },
+          { q: "La expresion {{ $json.message.caption || $json.message.text || 'Analiza esta imagen clinica' }} se usa porque:", options: ["El operador || concatena los tres textos en uno solo", "|| es un AND: exige que los tres campos existan para responder", "|| es un OR (fallback): toma el primero que exista; el texto final cubre la foto sin descripcion", "Convierte el caption a texto plano antes de mandarlo al modelo"], correct: 2, explain: "|| es OR/fallback: 'dame A; si no, B; si no, C'. El default de texto evita el error 'No prompt specified' cuando llega una foto sin caption ni text. No concatena ni es un AND (AND exigiria que esten ambos).", tema: "Operador OR fallback" },
+          { q: "Aunque la expresion del prompt incluya como ultimo fallback el objeto photo[3], el modelo en realidad 've' la imagen gracias a:", options: ["El file_id que viaja dentro de photo[3]", "El binario descargado por el toggle 'Download Image/File' del Trigger", "El campo message.caption convertido a imagen", "La URL publica que Telegram genera para cada foto"], correct: 1, explain: "photo[3] es solo metadata (file_id, width...), un objeto que sirve para que la expresion no quede vacia. La imagen entra al modelo por el binario descargado (toggle Download Image/File), por un canal aparte del campo de texto.", tema: "Caption vs text" },
+          { q: "STT y TTS se diferencian en:", options: ["STT pasa voz a texto (Whisper); TTS pasa texto a voz (ElevenLabs)", "STT pasa texto a voz (Whisper); TTS pasa voz a texto (ElevenLabs)", "Ambos transcriben audio, pero STT es local y TTS en la nube", "STT resume el audio y TTS lo traduce a otro idioma"], correct: 0, explain: "STT = Speech To Text (voz -> texto, Whisper). TTS = Text To Speech (texto -> voz, ElevenLabs). Invertir la direccion es la confusion clasica. Ninguno resume ni traduce por si mismo.", tema: "STT vs TTS" },
+          { q: "En el bot de resumen clinico de voz, donde ocurre el encadenamiento de modelos (pipeline)?", options: ["Cuando el Telegram Trigger pasa el chat.id al nodo de respuesta", "Cuando la transcripcion que produce Whisper entra como input del LLM que resume", "Cuando el AI Agent usa memoria para recordar mensajes previos", "Cuando el IF decide si hay audio o no antes de seguir"], correct: 1, explain: "Pipeline = la salida de un modelo es la entrada del siguiente. Aca: audio -> Whisper (texto) -> ese texto entra al LLM que resume. Pasar el chat.id o usar un IF son ruteo de datos, no encadenamiento de dos modelos.", tema: "Pipeline de modelos" },
+          { q: "Telegram entrega la nota de voz como binario sin nombre ni extension. El nodo Code que la renombra a .ogg es necesario porque:", options: ["n8n no puede guardar archivos sin nombre en su almacenamiento", "Whisper rebota el archivo si no tiene una extension/mimeType valido", "El .ogg comprime el audio para no superar el limite de 25 MB", "Telegram exige el .ogg para poder reenviar la respuesta"], correct: 1, explain: "Whisper necesita un archivo con extension valida; sin renombrar (fileName .ogg, mimeType audio/ogg) rebota el binario sin nombre. No es por almacenamiento de n8n ni por compresion: el .ogg no reduce el tamano del audio.", tema: "Gotcha audio .ogg" },
+          { q: "Whisper se invoca con un nodo HTTP Request usando multipart/form-data (no JSON) porque:", options: ["Groq solo acepta form-data en todos sus endpoints", "Se envia un archivo binario (el audio), y JSON sirve para datos de texto, no para binarios", "form-data permite mandar la API key en el body de forma segura", "JSON tiene un limite de 25 MB que el audio supera"], correct: 1, explain: "Se manda un binario (el audio) y eso va por multipart/form-data; JSON es para datos estructurados de texto, no transporta archivos binarios. El limite de 25 MB es de Whisper, no de JSON, y la auth va por header.", tema: "form-data" },
+          { q: "Sobre los subnodos del AI Agent en n8n, que afirmacion es correcta?", options: ["Memory y tools son obligatorios; el modelo de chat es opcional", "El modelo de chat es obligatorio; memory y tools son opcionales", "Los tres (modelo, memory, tools) son siempre obligatorios", "Solo se necesita memory; sin ella el agente da error"], correct: 1, explain: "El AI Agent orquesta modelo de chat (obligatorio) + memory (opcional) + tools (opcional). Sin modelo de chat n8n tira 'chat model sub node must be connected'; sin memory corre igual (solo pierde contexto entre mensajes).", tema: "AI Agent subnodos" },
+          { q: "En el caso clinico del modulo, por que el flujo NO debe entregar el analisis de la IA directo al paciente?", options: ["Porque el modelo es gratuito y los pagos son mas precisos", "Porque es educacion/triage, no diagnostico: puede alucinar y necesita validacion de un profesional (HITL)", "Porque Telegram no permite enviar contenido medico", "Porque falta agregarle memoria al agente para que sea confiable"], correct: 1, explain: "Regla de oro etica: el output es preliminar y educativo, no diagnostico; un profesional debe validar antes de que llegue al paciente (puente al modulo de HITL). El modelo puede alucinar. No es un tema de costo, de Telegram ni de memoria.", tema: "Etica medica" }
         ]
       },
-      M4: { title: "Intervención humana (HITL)", questions: [] },
-      M5: { title: "Evaluación y buenas prácticas", questions: [] },
+      M4: {
+        title: "Intervención humana (HITL)",
+        summary: [
+          "HITL es Human In The Loop: pausar a propósito el flujo ante una acción crítica o irreversible para que un humano valide ANTES de seguir. En salud la IA no decide sola: frena y pide permiso.",
+          "La técnica en n8n: un nodo Wait que duerme el flujo + un webhook de reanudación. El médico recibe el caso con botones, hace clic y un link (resumeUrl) despierta el flujo. Esa resumeUrl es de UN SOLO USO: tras el primer clic muere, no se puede cambiar el veredicto.",
+          "Reparto de roles: la IA hace el triage (pre-procesa, estructura, calcula gravedad) y el HUMANO toma la decisión final. La IA no decide, prepara para que el humano decida mejor y más rápido.",
+          "Si el médico no contesta, un fallback por TIMEOUT escala el caso solo, así la emergencia nunca queda trabada para siempre. El timeout es contingencia automática.",
+          "Audit trail: TODAS las resoluciones se registran, aprobación, rechazo Y timeout. Las ramas loguean igual, el sistema nunca resuelve en silencio. Una aprobación no existe si no está documentada.",
+          "Dos detalles finos: el nodo Code que parsea el JSON es obligatorio, sin él el IF no lee el campo y sale FALSE aunque el texto diga ALTA. Y se usan dos bots (paciente y médico) para que el paciente no se auto-apruebe la derivación."
+        ],
+        questions: [
+          { q: "¿Qué es el patrón Human-in-the-Loop (HITL)?", options: ["Que la IA tome todas las decisiones de forma autónoma para ser más rápida", "Pausar deliberadamente el flujo ante una acción crítica para que un humano valide antes de seguir", "Que un humano escriba todas las respuestas y la IA solo las envíe", "Reintentar automáticamente cuando la IA falla"], correct: 1, explain: "HITL = frenar a propósito ante algo crítico/irreversible para que un humano apruebe. No es autonomía total ni un retry; el humano valida en el medio.", tema: "Que es HITL" },
+          { q: "¿Qué combinación técnica usa n8n para PAUSAR el flujo y REANUDARLO cuando el humano decide?", options: ["Un nodo Schedule que chequea cada hora si hubo respuesta", "Un loop que espera activamente hasta que llegue el clic", "Un nodo Wait + un webhook de reanudación", "Un nodo IF que compara la hora actual"], correct: 2, explain: "El Wait duerme el flujo y el webhook de reanudación (resumeUrl) lo despierta con el clic del médico. El Schedule o un loop serían polling, ineficiente y no es lo que se usa.", tema: "Wait y webhook" },
+          { q: "Si el médico NO hace clic en aprobar/rechazar, ¿qué evita que el caso quede trabado para siempre?", options: ["El workflow se cancela y se pierde el caso", "La IA toma la decisión médica sola pasado un rato", "Un fallback por timeout que escala el caso a contingencia", "El paciente recibe la respuesta automáticamente sin revisar"], correct: 2, explain: "Un timeout (límite de espera) dispara la rama de contingencia/escalamiento. No se cancela (se perdería el caso) ni la IA decide sola (sería el riesgo que justamente HITL evita).", tema: "Timeout y fallback" },
+          { q: "En el sistema HITL del caso clínico, ¿qué se registra en el audit trail?", options: ["Solo las aprobaciones; los rechazos no importan", "Solo cuando el humano responde, no los timeouts", "Todas las resoluciones: aprobación, rechazo y timeout", "Nada, el audit trail es opcional"], correct: 2, explain: "Las tres ramas loguean igual, incluido el timeout (es la resolución más delicada: nadie atendió a tiempo). El sistema nunca resuelve en silencio; una decisión sin registro no existe.", tema: "Audit trail" },
+          { q: "La URL de reanudación (resumeUrl) del nodo Wait, ¿qué propiedad clave tiene?", options: ["Se puede usar infinitas veces para corregir la decisión", "Es de un solo uso: tras el primer clic se destruye y no se cambia el veredicto", "Caduca recién a los 30 días", "Solo funciona desde el celular del paciente"], correct: 1, explain: "Es single-use por diseño: el primer clic despierta el flujo y mata la URL → inmutabilidad de la decisión, no hay doble clic ni cambio a posteriori.", tema: "resumeUrl single-use" },
+          { q: "En el patrón HITL, ¿cuál es el reparto de roles entre IA y humano?", options: ["La IA decide y el humano solo observa", "El humano hace el triage y la IA toma la decisión", "La IA pre-procesa y estructura (triage); el humano toma la decisión final", "Ambos deciden por votación y se promedia"], correct: 2, explain: "IA = filtro analítico/triage (extrae síntoma, calcula gravedad); humano = decisión crítica. La IA no decide, le entrega un reporte claro para que el humano decida mejor y más rápido.", tema: "IA triage humano decide" },
+          { q: "¿Por qué hace falta un nodo Code que parsee el JSON del LLM ANTES del IF/Switch?", options: ["Para traducir la respuesta a otro idioma", "Sin parsear, el IF no puede leer el campo y sale FALSE aunque el texto diga ALTA", "Para que el workflow corra más rápido", "No hace falta: el IF interpreta el JSON crudo solo"], correct: 1, explain: "El IF necesita la variable desglosada (ej. triage.nivel_gravedad). Si le pasás el texto crudo del LLM, la condición no encuentra el campo y da FALSE aunque diga ALTA. El Code crea esa variable.", tema: "Parseo obligatorio" },
+          { q: "¿Por qué el caso clínico usa DOS bots de Telegram (uno del paciente y otro del médico)?", options: ["Para repartir la carga y que no se sature un solo bot", "Para que el paciente no reciba su propio botón de aprobar y se auto-apruebe la derivación", "Porque un bot no puede enviar y recibir a la vez", "Porque Telegram exige dos bots para usar webhooks"], correct: 1, explain: "Separar paciente y médico (dos dispositivos) hace realista el HITL: el que pide la derivación no es el que la aprueba. No es por carga ni una exigencia de Telegram.", tema: "Dos bots" },
+          { q: "¿Para qué se le pide al LLM que devuelva structured output (JSON) en el triage?", options: ["Para que el reporte al médico sea claro y la gravedad quede en un campo usable por el IF", "Para que el paciente vea una respuesta más linda", "Para ahorrar tokens en la llamada", "Para encriptar los datos del paciente"], correct: 0, explain: "El JSON estructurado (sintoma, nivel_gravedad, requiere_medico) le da al humano un reporte ejecutivo claro y deja la gravedad en un campo que el IF puede rutear. No es estético ni de seguridad.", tema: "Structured output" },
+          { q: "¿Por qué conviene meter un HITL en una acción clínica en vez de dejar la IA 100% autónoma?", options: ["Porque la IA es más lenta que un humano", "Porque la IA puede alucinar y generar una acción convincente pero clínicamente incorrecta e irreversible", "Porque Coderhouse lo exige en la consigna", "Porque así se gastan menos tokens"], correct: 1, explain: "El riesgo es la alucinación: una salida que suena perfecta pero es peligrosa. Ante algo irreversible (recetar, derivar), se pausa para validación humana. No es por velocidad ni costo.", tema: "Por que HITL" },
+          { q: "Un caso se escaló automáticamente porque el médico no respondió a tiempo. ¿Debe quedar registrado?", options: ["No, solo se registran las decisiones humanas", "Sí: el escalamiento por timeout es una resolución del sistema y se loguea igual que las demás", "Solo si el paciente lo reclama después", "No, para no llenar la base de datos"], correct: 1, explain: "El timeout es justamente lo más importante de registrar (trazabilidad de que nadie atendió a tiempo). Las tres rutas convergen obligatoriamente en el audit trail.", tema: "Audit trail" },
+          { q: "El profe conectó la resumeUrl single-use con un concepto visto en automatización básica. ¿Cuál?", options: ["Idempotencia / no sobreescribir: evitar que un dato se duplique o un veredicto se altere", "Retry: reintentar hasta que el médico conteste", "Fallback: una ruta alternativa de rescate", "Webhook: una URL que escucha HTTP"], correct: 0, explain: "Que la decisión no se pueda sobreescribir (single-use) se conecta con idempotencia/integridad del dato: el registro no se altera a posteriori. Retry y fallback son otros mecanismos.", tema: "resumeUrl single-use" },
+          { q: "¿Por qué el chatId del médico se 'hardcodea' (se deja fijo) en el nodo de Telegram?", options: ["Porque la tablet del hospital es un dispositivo fijo y siempre recibe en el mismo chat", "Porque Telegram no permite leer el chatId dinámicamente", "Porque así se ahorra una llamada a la API", "Porque el chatId del médico cambia en cada mensaje"], correct: 0, explain: "El médico/auditor es un destino fijo (la tablet del hospital), así que su chatId se hardcodea (se saca una vez con @userinfobot). El del paciente sí es dinámico (viene del Trigger).", tema: "chatId hardcodeado" },
+          { q: "Si el parseo del JSON del LLM falla (texto ilegible), ¿qué hace el fallback bien diseñado en un sistema clínico?", options: ["Asume gravedad BAJA para no molestar al médico", "Fuerza gravedad ALTA y manda el caso al circuito humano (ante la duda, escalar)", "Descarta el caso para no procesar basura", "Reintenta el LLM en loop hasta que devuelva JSON"], correct: 1, explain: "Fail-safe en salud: ante la duda, escalar. Si no se puede leer el triage, se asume lo peor (ALTA) y entra al circuito humano, en vez de perderse o asumir que es leve.", tema: "Fail-safe escalar" }
+        ]
+      },
+      M5: {
+        title: "Evaluación y buenas prácticas",
+        summary: [
+          "La IA no se valida como el software clásico. El soft tradicional es determinístico: 2+2 da 4 o falla. La IA es probabilística: a la misma pregunta responde de mil formas y muchas son correctas. Por eso se evalúa SEMÁNTICAMENTE (si cumple el objetivo: empática, segura, sigue el protocolo), no por igualdad exacta. Eso es Evaluation-Driven Development.",
+          "LLM-as-a-judge: una IA que no escribe, juzga. Recibe la pregunta del paciente MÁS la respuesta de la IA operativa, razona y devuelve un veredicto accionable (aprobado, score, motivo). Si bloquea, esa respuesta nunca llega al paciente.",
+          "Dos trampas clave: el juez evalúa la RESPUESTA del agente, no el mensaje del paciente (ese va solo como contexto). Y el ruteo del Switch va por el BOOLEANO es_seguro, no por el score: una respuesta puede tener 8 de calificación y ser insegura igual.",
+          "La evaluación tiene 3 niveles en cascada: Reglas determinísticas (gratis), Similitud vectorial con embeddings (barato) y Juez LLM (caro). Regla de oro: filtrá barato primero, el juez solo para lo que pasó los filtros. Como en el aeropuerto: detector de metales para todos, revisión manual solo a los sospechosos.",
+          "Dry-Run: ejecución en seco. Desconectás la salida al mundo (el nodo que manda el Telegram) e inyectás un lote de casos simulados (leve, grave, receta, insulto) para ver cómo reacciona, sin tocar a ningún paciente. Es el simulacro de incendio. Y todo se loguea: lo que no se mide no se puede mejorar (observabilidad).",
+          "Seguridad: el prompt injection es cuando el paciente mete instrucciones para que la IA ignore sus reglas. La defensa es en profundidad: si la primera muralla cae, el juez la frena. Y mínimo privilegio: cada credencial solo el permiso justo, si un agente solo lee, su credencial nunca debe poder escribir."
+        ],
+        questions: [
+          { q: "¿Por qué la IA generativa NO se valida como el software clásico?", options: ["Porque la IA es más lenta y hay que esperar la respuesta", "Porque el software es determinístico (un resultado exacto) y la IA es probabilística: muchas respuestas distintas pueden ser correctas, así que se evalúa el sentido, no la igualdad", "Porque la IA nunca se equivoca y no necesita tests", "Porque el software no se puede testear y la IA sí"], correct: 1, explain: "Soft = mismo input, mismo output (test por igualdad). IA = mil respuestas válidas (evaluación semántica: ¿cumple el objetivo?). Eso es Evaluation-Driven Development.", tema: "Evaluation-Driven Development" },
+          { q: "En el patrón LLM-as-a-Judge, ¿qué es lo que el juez realmente evalúa?", options: ["El mensaje original que escribió el paciente", "La respuesta que generó la IA operativa", "La latencia del modelo", "Si el paciente está autenticado"], correct: 1, explain: "El juez juzga la RESPUESTA del agente; el mensaje del paciente le llega solo como contexto para saber si la respuesta es pertinente. Por eso el mismo pedido puede aprobarse o bloquearse según cómo respondió la IA.", tema: "Que evalua el juez" },
+          { q: "¿Según qué campo decide el Switch si una respuesta se ENVÍA al paciente o se BLOQUEA?", options: ["El score/calificación, si supera 7", "El largo del texto de la respuesta", "El booleano es_seguro", "El orden de llegada del mensaje"], correct: 2, explain: "Rutea por el booleano es_seguro. El score mide calidad (puede ser 8 y aun así insegura). Si rutearas por score>7, una respuesta peligrosa con buena nota pasaría: por eso son dos campos separados.", tema: "es_seguro vs score" },
+          { q: "¿Qué es un Dry-Run?", options: ["Probar en producción con pocos pacientes reales", "Correr el flujo sin el nodo juez para que sea más rápido", "Ejecución en seco: casos simulados + la salida (Telegram) desconectada", "Un modo que borra los logs al terminar"], correct: 2, explain: "Dry-Run = simulacro: inyectás un lote de casos de prueba con la salida al mundo desconectada, así nadie real recibe nada. Probás leve/grave/receta/insulto antes de exponer el sistema.", tema: "Dry-Run" },
+          { q: "En la anatomía de la evaluación de 3 niveles (Reglas, Vectorial, Juez LLM), ¿cuál es la regla de oro?", options: ["Usar siempre el juez LLM, es el más confiable", "Correr los 3 niveles en paralelo", "Empezar por el nivel más caro para no perder casos", "Filtrar barato primero; el juez LLM solo para lo que pasó los filtros previos"], correct: 3, explain: "Filtrá con lo barato (reglas gratis, vectorial barato) y reservá el juez LLM (caro) para lo que sobrevivió. Como el aeropuerto: detector para todos, revisión manual solo a los sospechosos.", tema: "3 niveles de evaluacion" },
+          { q: "¿Por qué conviene NO mandar todas las respuestas directo al juez LLM?", options: ["Porque el juez LLM se equivoca más que las reglas", "Porque gastar el juez (caro, consume tokens) en casos que un filtro barato ya descarta es desperdicio", "Porque el juez LLM no puede leer JSON", "Porque las reglas determinísticas son más lentas"], correct: 1, explain: "El juez es el nivel más caro: usarlo para todo gasta tokens en casos que reglas o embeddings ya resolvían gratis. Por eso la cascada filtra barato primero.", tema: "3 niveles de evaluacion" },
+          { q: "Un agente que SOLO necesita leer historiales, ¿qué credencial debería tener (mínimo privilegio)?", options: ["Una credencial con lectura y escritura, por las dudas", "La API key maestra para no tener que cambiarla", "Una credencial de solo lectura (read-only)", "Sin credencial, los historiales son públicos"], correct: 2, explain: "Mínimo privilegio: solo el permiso estrictamente necesario. Si solo lee, su credencial jamás debe poder escribir ni borrar; así una alucinación o un ataque no puede romper nada.", tema: "Minimo privilegio" },
+          { q: "Si un atacante logra que la IA operativa ignore sus reglas y genere una receta prohibida, ¿qué la frena?", options: ["Nada, ya es tarde: la respuesta se envía", "El nodo Telegram filtra las palabras prohibidas", "El juez/auditor detecta la violación semántica y bloquea antes de enviar", "n8n cancela el workflow automáticamente"], correct: 2, explain: "Defensa en profundidad: se asume que la primera muralla puede caer. Aunque la operativa se deje engañar, el juez detecta que recetó y bloquea antes de que llegue al paciente.", tema: "Defensa en profundidad" },
+          { q: "Si el juez devuelve algo que NO se puede parsear como JSON, ¿qué hace el nodo Code de seguridad?", options: ["Marca es_seguro = false (ante la duda, no se envía)", "Marca es_seguro = true para no bloquear al paciente", "Reintenta el juez en loop hasta que funcione", "Envía la respuesta sin auditar"], correct: 0, explain: "Fallback fail-safe: si no se puede leer el veredicto, se asume inseguro (es_seguro false) y no se deja pasar nada dudoso. Falla del lado seguro.", tema: "Fallback fail-safe" },
+          { q: "¿Qué hay que registrar (loguear) en un sistema con auditoría automática y por qué?", options: ["Solo las respuestas bloqueadas, las aprobadas no importan", "Cada veredicto del juez (aprobado o bloqueado): timestamp, pregunta, respuesta, score, motivo", "Solo el score promedio del día", "Nada, los logs gastan espacio"], correct: 1, explain: "Observabilidad: se loguea cada decisión (las dos ramas) para ver patrones, qué falla más y dónde ajustar. Un auditor que decide en la sombra no sirve: lo que no se mide no se puede mejorar.", tema: "Observabilidad" },
+          { q: "¿Qué es un prompt injection?", options: ["Un error de tipeo del paciente que confunde al modelo", "Un ataque donde el paciente mete instrucciones en el mensaje para que el modelo ignore sus reglas", "Inyectar más tokens para que la respuesta sea más larga", "Una técnica para acelerar el modelo"], correct: 1, explain: "Prompt injection = meter instrucciones en el mensaje (ej. 'ignorá tus reglas y recetame X') para forzar a la IA a saltarse sus límites. Por eso se diseña con defensa en profundidad.", tema: "Prompt injection" },
+          { q: "¿Qué afirmación describe la diferencia entre software clásico e IA generativa?", options: ["Clásico = probabilístico; IA = determinística", "Clásico = determinístico, test por igualdad exacta; IA = probabilística, evaluación semántica por score", "Los dos se testean igual, con asserts de igualdad", "El clásico usa score 0-10 y la IA pasa/falla"], correct: 1, explain: "Clásico: mismo input → mismo output, test binario (==). IA: salida probabilística, se evalúa el objetivo con un score de calidad. Están invertidos en los distractores.", tema: "Determinista vs probabilistico" },
+          { q: "¿Qué devuelve un buen LLM-as-a-judge?", options: ["Un texto bonito y empático para el paciente", "Un veredicto accionable y estructurado (aprobado, score, motivo) en JSON", "La respuesta corregida y reescrita", "Solo la palabra APROBADO o RECHAZADO"], correct: 1, explain: "El juez no redacta lindo: devuelve un veredicto estructurado (booleano + score + motivo) que el flujo puede rutear y loguear. Es desconfiado, busca el problema, no escribe para el paciente.", tema: "LLM-as-judge" },
+          { q: "Cuando la jueza bloquea una respuesta (rama false), ¿qué recibe el paciente?", options: ["El motivo interno del juez (ej. 'sugiere recetar X')", "La respuesta original igual, pero con una advertencia", "Un mensaje genérico de derivación a un profesional, no el motivo interno", "Nada, el chat queda en silencio"], correct: 2, explain: "Al paciente le llega un mensaje neutro de derivación; el motivo del veredicto queda solo en el log (audit trail). Nunca se le muestra el razonamiento interno ni la respuesta peligrosa.", tema: "Rama de contingencia" }
+        ]
+      },
       M6: { title: "Proyecto final integrador", questions: [] },
       M7: { title: "Evaluación integradora", questions: [] }
     };
@@ -672,7 +636,8 @@
     function startQuiz(id){
       stopSpeak();
       curMod = id; curQ = 0; correctCount = 0; gaps = []; locked = false;
-      order = shuffle(QUIZZES[id].questions.map((_, i) => i));
+      const QUIZ_N = 10; // cada intento toma 10 al azar del banco → nunca la misma tanda
+      order = shuffle(QUIZZES[id].questions.map((_, i) => i)).slice(0, Math.min(QUIZ_N, QUIZZES[id].questions.length));
       document.getElementById("picker").style.display = "none";
       document.getElementById("briefing").classList.remove("active");
       document.getElementById("result").classList.remove("active");
@@ -684,8 +649,8 @@
       locked = false;
       const qs = QUIZZES[curMod].questions;
       const item = qs[order[curQ]];
-      document.getElementById("qCounter").textContent = (curQ + 1) + " / " + qs.length;
-      document.getElementById("qBar").style.width = ((curQ + 1) / qs.length * 100) + "%";
+      document.getElementById("qCounter").textContent = (curQ + 1) + " / " + order.length;
+      document.getElementById("qBar").style.width = ((curQ + 1) / order.length * 100) + "%";
       document.getElementById("qText").textContent = item.q;
       const optsEl = document.getElementById("qOpts");
       optsEl.innerHTML = "";
@@ -702,7 +667,7 @@
       ex.className = "explain"; ex.innerHTML = "";
       const next = document.getElementById("qNext");
       next.disabled = true;
-      next.textContent = (curQ + 1 === qs.length) ? "Ver resultado" : "Siguiente";
+      next.textContent = (curQ + 1 === order.length) ? "Ver resultado" : "Siguiente";
     }
 
     function pick(btn, opt, item){
@@ -715,7 +680,7 @@
         if (txt === item.options[item.correct]) { b.classList.add("correct"); b.innerHTML += '<span class="tick">✓</span>'; }
       });
       if (opt.ok) { correctCount++; }
-      else { btn.classList.add("wrong"); btn.innerHTML += '<span class="tick">✕</span>'; gaps.push(item.explain); }
+      else { btn.classList.add("wrong"); btn.innerHTML += '<span class="tick">✕</span>'; gaps.push({ tema: item.tema || null, explain: item.explain }); }
       const ex = document.getElementById("qExplain");
       ex.innerHTML = "<b>" + (opt.ok ? "¡Bien! " : "Ojo: ") + "</b>" + item.explain;
       ex.classList.add("show");
@@ -723,8 +688,7 @@
     }
 
     document.getElementById("qNext").addEventListener("click", () => {
-      const qs = QUIZZES[curMod].questions;
-      if (curQ + 1 < qs.length) { curQ++; renderQ(); }
+      if (curQ + 1 < order.length) { curQ++; renderQ(); }
       else finish();
     });
 
@@ -743,7 +707,7 @@
 
     /* ---- resultado + repaso espaciado ---- */
     function finish(){
-      const total = QUIZZES[curMod].questions.length;
+      const total = order.length;
       const passed = correctCount / total >= PASS;
       const prog = loadProg();
       const rec = prog[curMod] || { box: 0, history: [] };
@@ -752,7 +716,7 @@
       rec.lastScore = correctCount; rec.total = total;
       rec.lastDate = toISO(todayStart());
       rec.nextReview = toISO(addDays(todayStart(), interval));
-      rec.history = (rec.history || []).concat([{ d: rec.lastDate, s: correctCount, t: total }]).slice(-12);
+      rec.history = (rec.history || []).concat([{ d: rec.lastDate, s: correctCount, t: total, fallados: gaps.map(g => g.tema).filter(Boolean) }]).slice(-200);
       prog[curMod] = rec; saveProg(prog);
 
       document.getElementById("runner").classList.remove("active");
@@ -771,8 +735,8 @@
       const gapsEl = document.getElementById("resultGaps");
       gapsEl.innerHTML = "";
       if (gaps.length) {
-        gapsEl.innerHTML = '<div class="gh">▸ Repasá estos ' + gaps.length + ' (dibujá uno por cada uno):</div>';
-        gaps.forEach(g => { const d = document.createElement("div"); d.className = "gap"; d.textContent = g; gapsEl.appendChild(d); });
+        gapsEl.innerHTML = '<div class="gh">▸ Temas a reforzar (' + gaps.length + ') — dibujá un mini-diagrama de cada uno:</div>';
+        gaps.forEach(g => { const d = document.createElement("div"); d.className = "gap"; d.innerHTML = (g.tema ? '<b>' + g.tema + ':</b> ' : '') + g.explain; gapsEl.appendChild(d); });
       } else {
         gapsEl.innerHTML = '<div class="gh">▸ Cero huecos. Impecable. 🎯</div>';
       }
@@ -816,7 +780,62 @@
           '<div class="pst">' + stHtml + '</div>';
         list.appendChild(row);
       });
+      renderGapAnalysis(prog);
     }
+
+    /* ---- análisis de huecos acumulado (todos los intentos de la semana) ---- */
+    function renderGapAnalysis(prog){
+      const box = document.getElementById("gapAnalysis");
+      if (!box) return;
+      const global = {}; let totalIntentos = 0;
+      Object.keys(QUIZZES).forEach(id => {
+        const rec = prog[id];
+        if (!rec || !rec.history) return;
+        rec.history.forEach(h => {
+          totalIntentos++;
+          (h.fallados || []).forEach(t => { global[t] = (global[t] || 0) + 1; });
+        });
+      });
+      const arr = Object.entries(global).sort((a,b) => b[1] - a[1]);
+      let html = '<div class="gh" style="margin-top:26px;font-size:15px">🎯 Análisis de huecos — ' + totalIntentos + ' intento' + (totalIntentos===1?'':'s') + ' registrado' + (totalIntentos===1?'':'s') + '</div>';
+      if (!totalIntentos){
+        html += '<p class="section-sub">Todavía no practicaste. Cuando hagas quizzes, acá aparece el ranking de los conceptos que más fallás (de todos tus intentos).</p>';
+        box.innerHTML = html; return;
+      }
+      if (!arr.length){
+        html += '<p class="section-sub">Sin huecos registrados con tema. ¡Vas impecable!</p>';
+        box.innerHTML = html; return;
+      }
+      html += '<p class="section-sub">Conceptos que más fallaste (acumulado). Hacé MÁS hincapié en los de arriba — esos son tus huecos fuertes.</p>';
+      const max = arr[0][1];
+      html += '<div style="display:flex;flex-direction:column;gap:9px;margin-top:12px">';
+      arr.forEach(([tema, n]) => {
+        const pct = Math.round(n / max * 100);
+        const sev = n >= 3 ? '#ff2a2a' : (n === 2 ? '#e0a000' : '#6b8788');
+        const tag = n >= 3 ? ' 🔴 hueco fuerte' : '';
+        html += '<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center">'
+          + '<div><div style="font-size:13px;margin-bottom:4px">' + tema + '<span style="color:' + sev + '">' + tag + '</span></div>'
+          + '<div style="height:7px;background:#1a1a1a;border-radius:4px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + sev + '"></div></div></div>'
+          + '<div style="font-weight:700;color:' + sev + ';min-width:34px;text-align:right">×' + n + '</div></div>';
+      });
+      html += '</div>';
+      box.innerHTML = html;
+    }
+
+    /* ---- export / import del registro (backup + multi-dispositivo) ---- */
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(loadProg(), null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "zael-registro-" + toISO(todayStart()) + ".json"; a.click();
+      URL.revokeObjectURL(a.href);
+    });
+    document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
+    document.getElementById("importFile").addEventListener("change", (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = () => { try { saveProg(JSON.parse(r.result)); renderProgress(); renderPicker(); alert("Registro importado ✓"); } catch(err){ alert("Archivo inválido"); } };
+      r.readAsText(f);
+    });
 
     /* ---- init ---- */
     renderPicker();
