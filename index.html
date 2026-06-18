@@ -830,10 +830,38 @@
       URL.revokeObjectURL(a.href);
     });
     document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
+    function mergeProg(a, b){
+      const out = JSON.parse(JSON.stringify(a || {}));
+      Object.keys(b || {}).forEach(k => {
+        if (!out[k]) { out[k] = b[k]; return; }
+        const seen = new Set(), merged = [];
+        (out[k].history || []).concat(b[k].history || []).forEach(h => {
+          const sig = h.d + "|" + h.s + "|" + h.t + "|" + ((h.fallados || []).join(","));
+          if (!seen.has(sig)) { seen.add(sig); merged.push(h); }
+        });
+        merged.sort((x, y) => (x.d || "").localeCompare(y.d || ""));
+        out[k].history = merged.slice(-200);
+        const pick = (b[k].lastDate || "") >= (out[k].lastDate || "") ? b[k] : out[k];
+        out[k].box = pick.box; out[k].lastScore = pick.lastScore; out[k].total = pick.total;
+        out[k].lastDate = pick.lastDate; out[k].nextReview = pick.nextReview;
+      });
+      return out;
+    }
+    function countAttempts(p){ return Object.values(p || {}).reduce((n, m) => n + ((m.history || []).length), 0); }
     document.getElementById("importFile").addEventListener("change", (e) => {
       const f = e.target.files[0]; if (!f) return;
       const r = new FileReader();
-      r.onload = () => { try { saveProg(JSON.parse(r.result)); renderProgress(); renderPicker(); alert("Registro importado ✓"); } catch(err){ alert("Archivo inválido"); } };
+      r.onload = () => {
+        try {
+          const incoming = JSON.parse(r.result);
+          const before = countAttempts(loadProg());
+          const merged = mergeProg(loadProg(), incoming);
+          saveProg(merged);
+          renderProgress(); renderPicker();
+          const after = countAttempts(merged);
+          alert("Registro combinado ✓ — ahora hay " + after + " intentos (se sumaron " + (after - before) + ").");
+        } catch(err){ alert("Archivo inválido"); }
+      };
       r.readAsText(f);
     });
 
